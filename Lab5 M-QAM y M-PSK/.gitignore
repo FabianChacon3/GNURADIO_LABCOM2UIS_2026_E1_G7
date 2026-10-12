@@ -1,0 +1,36 @@
+# =========================
+# Python / GNU Radio
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.grc_gnuradio/
+
+# =========================
+# LaTeX (Archivos temporales)
+# =========================
+*.aux
+*.bbl
+*.blg
+*.brf
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.nav
+*.snm
+*.vrb
+
+# =========================
+# Sistema Operativo
+# =========================
+.DS_Store
+Thumbs.db
