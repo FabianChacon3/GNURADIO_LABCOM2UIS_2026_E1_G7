@@ -1,0 +1,22 @@
+{
+  "reference": "D:\\26-II\\Comu II fchacon\\Labs\\Lab6 QPSK TX-RX\\data\\entrada\\audio_demo.wav",
+  "received": "D:\\26-II\\Comu II fchacon\\Labs\\Lab6 QPSK TX-RX\\data\\resultados\\audio_rx_capture.wav",
+  "fs_hz": 44100,
+  "analyzed_duration_s": 1.0,
+  "alignment_lag_ms": -0.7482993197278912,
+  "rms_reference": 0.011390668990087024,
+  "rms_received": 0.020177859467791815,
+  "peak_reference": 0.03814697265625,
+  "peak_received": 0.0625,
+  "mse": 0.0005301532216682659,
+  "correlation": 0.01465784129096616,
+  "snr_raw_db": -6.113029417855219,
+  "fitted_rx_to_ref_gain": 0.008277289799168528,
+  "snr_after_gain_fit_db": 0.0009338111286212134,
+  "clipping_rx_percent": 0.0,
+  "bandwidth_95_percent_reference_hz": 409.130859375,
+  "bandwidth_95_percent_received_hz": 376.8310546875,
+  "bandwidth_99_percent_reference_hz": 511.41357421875,
+  "bandwidth_99_percent_received_hz": 705.21240234375,
+  "warnings": []
+}
