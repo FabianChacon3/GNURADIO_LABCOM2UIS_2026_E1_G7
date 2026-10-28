@@ -68,7 +68,7 @@ class QPSK_TX_RX(gr.top_block, Qt.QWidget):
         # Variables
         ##################################################
         self.tabla_de_verdad_constelacion = tabla_de_verdad_constelacion = [0.77+0.77j, -0.77+0.77j, -0.77-0.77j, 0.77-0.77j]
-        self.sample_rate_audio = sample_rate_audio = 44100
+        self.sample_rate_audio = sample_rate_audio = 48000
         self.Sps = Sps = 8
         self.tx_power_db = tx_power_db = 0
         self.samp_rate = samp_rate = sample_rate_audio*4*Sps
@@ -317,9 +317,9 @@ class QPSK_TX_RX(gr.top_block, Qt.QWidget):
         self.interp_fir_filter_xxx_0.declare_sample_delay(0)
         self.digital_constellation_decoder_cb_0 = digital.constellation_decoder_cb(constelacion_qpsk)
         self.digital_chunks_to_symbols_xx_0_0 = digital.chunks_to_symbols_bc(tabla_de_verdad_constelacion, 1)
-        self.blocks_wavfile_source_0 = blocks.wavfile_source('data/entrada/audio_demo.wav', True)
+        self.blocks_wavfile_source_0 = blocks.wavfile_source('D:\\26-II\\Comu II fchacon\\Labs\\Lab6 QPSK TX-RX\\data\\entrada\\audio_original.wav', True)
         self.blocks_wavfile_sink_rx = blocks.wavfile_sink(
-            'data/resultados/audio_rx_capture.wav',
+            '../data/resultados/audio_rx_capture.wav',
             1,
             sample_rate_audio,
             blocks.FORMAT_WAV,

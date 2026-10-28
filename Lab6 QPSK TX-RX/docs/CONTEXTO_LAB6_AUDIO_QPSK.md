@@ -19,7 +19,9 @@ La captura de análisis del archivo original muestra estos datos:
 - Frecuencia de muestreo: **48.000 Hz**.
 - Canales: **2 (estéreo)**.
 - Duración aproximada: **243,66 s**.
-- Frecuencia de Nyquist: **24 kHz**.
+- Frecuencia de Nyquist: **24 kHz** (límite teórico de un archivo a 48 kHz,
+  no una afirmación de que la mayor parte de la potencia esté bajo esa
+  frecuencia).
 - Visualmente, la zona de mayor magnitud está principalmente bajo unos **5 kHz**; hay contenido visible hasta aproximadamente **16–17 kHz**. Estos límites son una lectura de la gráfica, no una estimación exacta de energía acumulada.
 
 El grafo anterior configuraba la salida de audio a **44.100 Hz** y la fuente WAV usaba un único canal. Si se reproduce un archivo de 48 kHz como si sus muestras fueran de 44,1 kHz, sin remuestrear realmente, la velocidad relativa es:
@@ -32,7 +34,11 @@ Por ello el audio puede sonar más lento y grave; la duración teórica cambiar�
 
 ### Decisión de entrada
 
-El grafo espera `audio_demo.wav`, **mono, WAV PCM de 16 bits y 44.100 Hz**. El script `preparar_audio.py` crea este archivo desde una fuente compatible con `soundfile`.
+El grafo espera `audio_demo.wav`, **mono, WAV PCM de 16 bits y 44.100 Hz**.
+Sin embargo, antes de QPSK el bloque `Float to Char` reduce cada muestra a una
+representación efectiva de 8 bits con escala 128. Por tanto, no debe afirmarse
+que el flujo transmite PCM16 directamente. El script único `lab6_audio.py`
+crea el archivo PCM16 de entrada desde una fuente compatible con `soundfile`.
 
 Por defecto, el script normaliza el pico a -1 dBFS. Esto cambia el nivel de reproducción, pero mejora el aprovechamiento del cuantizador de 8 bits que existe en el grafo. Para conservar la amplitud relativa original, usar `--sin-normalizar`; si se hace, se debe comprobar que el audio no tenga un pico demasiado bajo para la cuantización actual.
 
@@ -44,7 +50,7 @@ El downmix empleado es el promedio aritmético de L y R. Puede producir cancelac
 Archivo original 48 kHz estéreo
         │
         ▼
-preparar_audio.py
+lab6_audio.py
   downmix + remuestreo real + WAV PCM16 mono, 44.1 kHz
         │
         ▼
@@ -132,9 +138,7 @@ El eje vertical de los espectros está normalizado o expresado relativamente, sa
 | Archivo | Propósito | Cuándo usarlo |
 |---|---|---|
 | `src/lab6_tx_rx_audio_qpsk_mejorado.grc` | Grafo maestro de GNU Radio Companion; contiene controles, visualizaciones y captura WAV de RX. | Abrir/editar/ejecutar en GNU Radio Companion. |
-| `src/preparar_audio.py` | Convierte la fuente a mono WAV PCM16 y 44,1 kHz; incluye normalización opcional. | Antes de ejecutar el grafo. |
-| `src/caracterizar_audio.py` | Caracteriza tasa, canales, duración, pico, RMS y visualiza forma de onda, FFT y espectrograma. | Para documentar el audio original y el WAV preparado. |
-| `src/comparar_audio_rx.py` | Compara referencia y captura del receptor; calcula correlación, MSE, SNR de reconstrucción cruda y ajustada a nivel, y ancho de banda acumulado estimado. | Después de capturar `data/resultados/audio_rx_capture.wav`. |
+| `src/lab6_audio.py` | Prepara cualquier audio, genera caracterizaciones y compara la captura RX con métricas de fidelidad. | Flujo completo antes y después de ejecutar GNU Radio. |
 | `requirements.txt` | Dependencias Python de los scripts de análisis/preparación. | Instalar en el entorno Python utilizado. |
 | `data/evidencia/analisis_audio_48k_stereo.png` | Captura de las gráficas del archivo inicial. | Evidencia para el informe. |
 
@@ -142,19 +146,44 @@ El eje vertical de los espectros está normalizado o expresado relativamente, sa
 
 ## 7. Procedimiento reproducible
 
+### Flujo automático
+
+Desde la raíz del laboratorio se puede ejecutar:
+
+```bash
+python src/lab6_audio.py
+```
+
+El comando detecta la frecuencia del audio fuente, prepara
+`data/entrada/audio_demo.wav` a la tasa declarada por el `.grc`, genera las
+caracterizaciones del original y del derivado, verifica las rutas del `.grc` y compara
+`data/resultados/audio_rx_capture.wav` si existe. GNU Radio Companion se
+ejecuta aparte; después de cerrar una captura RX, vuelve a ejecutar el comando
+para actualizar las métricas.
+
+La frecuencia de la canción fuente no es un requisito: el remuestreo se aplica
+al derivado que consume GNU Radio. Si la captura RX fue producida con otra
+frecuencia, el comparador la remuestrea en memoria para el diagnóstico y lo
+registra como advertencia. Esa
+comparación no convierte la captura antigua en evidencia del flujo actual:
+para resultados finales se debe regenerar `QPSK_TX_RX.py` desde el `.grc` y
+capturar nuevamente a 44.100 Hz.
+
 ### A. Preparar y analizar la referencia
 
 ```bash
 python -m pip install -r requirements.txt
-python src/preparar_audio.py "cancion_original.wav"
-python src/caracterizar_audio.py data/entrada/audio_demo.wav --guardar-graficas --max-segundos 0.02
+python src/lab6_audio.py --entrada data/entrada/audio_original.wav --solo-preparar
 ```
 
 Comprueba que el script informa 44.100 Hz, un canal y PCM16. La duración debe ser casi igual a la del original; el remuestreo cambia el número de muestras, no debe cambiar significativamente la duración.
 
 ### B. Ejecutar GNU Radio
 
-1. Coloca `audio_demo.wav` en `data/entrada/` o créalo con `src/preparar_audio.py`.
+1. Ejecuta `python src/lab6_audio.py --entrada ruta/al/audio_original.wav --solo-preparar`.
+   Al ejecutar el flujo desde GNU Radio Companion, sus rutas relativas se
+   resuelven desde `src/`, por lo que el `.grc` utiliza `../data/entrada/` y
+   `../data/resultados/`.
 2. Abre `src/lab6_tx_rx_audio_qpsk_mejorado.grc` en GNU Radio Companion y comprueba que no haya bloques desconocidos o errores de validación.
 3. Ejecuta primero con `tx_power_db = 0 dB` y `noise_amp = 0` como línea base.
 4. Prueba con el ruido fijo y disminuye el nivel TX, por ejemplo 0, -6, -12 y -18 dB.
@@ -166,7 +195,7 @@ La fuente del grafo repite el audio para permitir mover los controles durante la
 ### C. Comparar calidad
 
 ```bash
-python src/comparar_audio_rx.py data/entrada/audio_demo.wav data/resultados/audio_rx_capture.wav --max-segundos 20 --guardar
+python src/lab6_audio.py --entrada data/entrada/audio_original.wav --recibido data/resultados/audio_rx_capture.wav --max-segundos 20
 ```
 
 El programa muestra y guarda un PNG con forma de onda, espectro relativo y residuo temporal; también genera un JSON de métricas.
@@ -181,7 +210,7 @@ El programa muestra y guarda un PNG con forma de onda, espectro relativo y resid
 
 **Estas métricas no son BER del canal.** Para medir BER de forma válida habría que comparar los bits de referencia con los bits recuperados, alineados antes/después del decisor, y contar bits distintos; el análisis WAV aquí implementado mide fidelidad del audio reconstruido.
 
-## 8. Matriz de experimentos sugerida
+## 8. Matriz de experimentos propuesta
 
 Mantener `scale=128`, `rx_gain=1` y mismo archivo de referencia para todos los casos. Registrar cada captura con nombre distinto.
 
@@ -194,7 +223,11 @@ Mantener `scale=128`, `rx_gain=1` y mismo archivo de referencia para todos los c
 | E — ruido mayor | 0 dB | 0,05 | Aislar el efecto de aumentar ruido con TX fijo. |
 | F — condición desafiante | -12 dB | 0,05 | Observar interacción de TX bajo y ruido alto. |
 
-Los valores de `noise_amp` son valores iniciales de prueba, no niveles de SNR garantizados. Ajustar si las condiciones no producen diferencias visibles o si el receptor falla desde el primer punto.
+Esta tabla es una propuesta metodológica, no evidencia de ensayos realizados.
+Los valores de `noise_amp` son valores iniciales de prueba, no niveles de SNR
+garantizados. Ajustar si las condiciones no producen diferencias visibles o si
+el receptor falla desde el primer punto. Para cada captura real, conservar el
+JSON generado con los parámetros de la corrida.
 
 Plantilla de resultados:
 
@@ -216,9 +249,7 @@ lab6-tx-rx-audio-qpsk/
 ├── src/
 │   ├── lab6_tx_rx_audio_qpsk_mejorado.grc
 │   ├── QPSK_TX_RX.py
-│   ├── preparar_audio.py
-│   ├── caracterizar_audio.py
-│   └── comparar_audio_rx.py
+│   ├── lab6_audio.py           # punto de entrada automático
 ├── data/
 │   ├── entrada/                  # fuente original y WAV preparado
 │   ├── resultados/               # capturas, figuras y métricas generadas
@@ -257,7 +288,7 @@ Recomendaciones:
 - No versionar archivos temporales/grandes como `data/resultados/audio_rx_capture.wav` si no son evidencia necesaria.
 - No incluir canciones protegidas por copyright sin autorización; documentar nombre, licencia y origen, o utilizar un audio libre.
 - Versionar los scripts y las instrucciones para que la persona que evalúe pueda recrear los WAV derivados localmente.
-- Guardar las salidas de cada experimento junto a un JSON de parámetros (`tx_power_db`, `noise_amp`, `rx_gain`, `scale`, fs, versión de GNU Radio, sistema operativo).
+- Guardar las salidas de cada experimento junto a un JSON de parámetros (`tx_power_db`, `noise_amp`, `rx_gain`, `scale`, `Sps`, fs, versión de GNU Radio, sistema operativo, archivo de entrada y duración analizada). `lab6_audio.py` registra estos datos.
 - Mantener originales inmutables; los WAV convertidos son derivados guardados en `data/entrada/`.
 
 ## 10. Estructura sugerida del informe
@@ -276,7 +307,12 @@ Recomendaciones:
 
 ## 11. Estado de validación
 
-Validado en este paquete: sintaxis Python de los scripts, análisis estático de la estructura YAML y referencias entre bloques del `.grc`.
+Validado en este paquete: sintaxis Python de los scripts, análisis estático de
+la estructura YAML y referencias entre bloques del `.grc`. La captura existente
+es una referencia de diagnóstico; no se afirma aquí que represente una
+condición experimental ideal o una BER medida. La ejecución de GNU Radio,
+escucha y validación por condición deben completarse en el equipo de
+laboratorio.
 
 Pendiente en el equipo de laboratorio: abrir el `.grc` en la versión instalada de GNU Radio Companion, generar y ejecutar el flujo, confirmar la ruta de salida de `data/resultados/audio_rx_capture.wav`, escuchar la salida y completar capturas de cada condición experimental. No se afirma que el grafo se haya ejecutado en este entorno, porque GNU Radio Companion no está instalado aquí y no se ha proporcionado el WAV original para una prueba integral.
 

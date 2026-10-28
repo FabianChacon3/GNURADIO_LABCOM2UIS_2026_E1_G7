@@ -37,7 +37,7 @@
 
 ## 4. Preparación del audio
 
-[Comando de `preparar_audio.py`, decisiones de downmix y normalización. Incluir la gráfica de caracterización del archivo original y del preparado.]
+[Comando de `lab6_audio.py --solo-preparar`, decisiones de downmix y normalización. Incluir la gráfica de caracterización del archivo original y del preparado.]
 
 ## 5. Arquitectura implementada
 
@@ -50,7 +50,9 @@ Parámetros derivados:
 - Símbolos QPSK por muestra: 4.
 - `Sps`: 8.
 - Tasa de símbolos estimada: 176.400 símbolos/s.
-- Tasa compleja del canal: 1.411.200 muestras/s.
+- Tasa compleja del canal: 1.411.200 muestras/s. La guía puede sugerir 1,024
+  MHz, pero ese valor no coincide con la configuración actual del `.grc`;
+  reportar la discrepancia en lugar de ocultarla.
 
 ## 6. Metodología experimental
 
@@ -68,13 +70,13 @@ Parámetros derivados:
 
 Incluir las figuras de la forma de onda, espectro del audio, espectro del canal y constelación recibida. No confundir el espectro del archivo musical con el espectro de la señal QPSK de banda base.
 
-| Caso | Duración analizada (s) | Correlación | MSE | SNR cruda (dB) | SNR ajustada (dB) | BW 95% RX (Hz) | Observación auditiva |
-|---|---:|---:|---:|---:|---:|---:|---|
-| A | | | | | | | |
-| B | | | | | | | |
-| C | | | | | | | |
-| D | | | | | | | |
-| E | | | | | | | |
+| Caso | TX (dB) | Ruido | RX gain | Escala | Sps | Duración (s) | Correlación | MSE | SNR cruda (dB) | SNR ajustada (dB) | BW 95% RX (Hz) | Observación auditiva |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| A | | | | | | | | | | | | |
+| B | | | | | | | | | | | | |
+| C | | | | | | | | | | | | |
+| D | | | | | | | | | | | | |
+| E | | | | | | | | | | | | |
 
 ## 8. Análisis y discusión
 
@@ -85,7 +87,9 @@ Incluir las figuras de la forma de onda, espectro del audio, espectro del canal 
 - ¿Cómo varían correlación, MSE y SNR de reconstrucción entre escenarios?
 - ¿Qué indica el ancho de banda acumulado y qué no permite concluir?
 
-Advertencia: SNR de reconstrucción de audio no es igual a SNR del canal y el script de comparación no mide BER directamente.
+Advertencia: SNR de reconstrucción de audio no es igual a SNR del canal y el
+script de comparación no mide BER directamente. Las filas deben completarse
+solo con capturas realmente ejecutadas y con sus parámetros registrados.
 
 ## 9. Limitaciones
 

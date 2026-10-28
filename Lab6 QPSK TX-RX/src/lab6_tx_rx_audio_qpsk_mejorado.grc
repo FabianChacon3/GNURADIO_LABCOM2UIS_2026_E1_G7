@@ -1,4 +1,4 @@
-options:
+../data/entrada/audio_demo.wavoptions:
   parameters:
     author: ''
     catch_exceptions: 'True'
@@ -43,7 +43,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [704, 16.0]
+    coordinate: [760, 12.0]
     rotation: 0
     state: enabled
 - name: constelacion_qpsk
@@ -75,7 +75,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [544, 16.0]
+    coordinate: [552, 12.0]
     rotation: 0
     state: enabled
 - name: noise_amp
@@ -96,7 +96,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [704, 232.0]
+    coordinate: [704, 240.0]
     rotation: 0
     state: enabled
 - name: samp_rate
@@ -120,7 +120,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [200, 72]
+    coordinate: [864, 12.0]
     rotation: 0
     state: enabled
 - name: tabla_de_verdad_constelacion
@@ -132,13 +132,13 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [336, 16.0]
+    coordinate: [328, 12.0]
     rotation: 0
     state: enabled
 - name: tx_power_db
   id: variable_qtgui_range
   parameters:
-    comment: 'Ganancia relativa de amplitud: A=10^(dB/20). No representa vatios calibrados.'
+    comment: 'Ganancia relativa de amplitud: A=10^(dB/20).'
     gui_hint: ''
     label: Nivel TX relativo (dB)
     min_len: '200'
@@ -153,7 +153,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [704, 88.0]
+    coordinate: [1296, 16.0]
     rotation: 0
     state: enabled
 - name: analog_noise_source_x_0
@@ -241,7 +241,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [216, 160.0]
+    coordinate: [200, 136.0]
     rotation: 0
     state: enabled
 - name: blocks_keep_one_in_n_0
@@ -259,7 +259,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [216, 640.0]
+    coordinate: [264, 728.0]
     rotation: 0
     state: enabled
 - name: blocks_multiply_const_vxx_0
@@ -295,7 +295,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1080, 160.0]
+    coordinate: [1096, 152.0]
     rotation: 0
     state: enabled
 - name: blocks_packed_to_unpacked_xx_0
@@ -314,7 +314,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [376, 152.0]
+    coordinate: [368, 196.0]
     rotation: 0
     state: enabled
 - name: blocks_unpacked_to_packed_xx_0
@@ -348,7 +348,7 @@ blocks:
     bits_per_sample4: FORMAT_PCM_16
     comment: "Captura la salida reconstruida para comparar m\xE9tricas fuera de GNU\
       \ Radio."
-    file: data/resultados/audio_rx_capture.wav
+    file: ../data/resultados/audio_rx_capture.wav
     format: FORMAT_WAV
     nchan: '1'
     samp_rate: sample_rate_audio
@@ -365,7 +365,7 @@ blocks:
     affinity: ''
     alias: ''
     comment: Requiere audio_demo.wav mono PCM16 remuestreado a sample_rate_audio.
-    file: data/entrada/audio_demo.wav
+    file: ../data/entrada/audio_demo.wav
     maxoutbuf: '0'
     minoutbuf: '0'
     nchan: '1'
@@ -374,7 +374,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [24, 152.0]
+    coordinate: [16, 188.0]
     rotation: 0
     state: enabled
 - name: digital_chunks_to_symbols_xx_0_0
@@ -394,7 +394,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [688, 152.0]
+    coordinate: [608, 100.0]
     rotation: 0
     state: true
 - name: digital_constellation_decoder_cb_0
@@ -429,7 +429,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [936, 152.0]
+    coordinate: [880, 116.0]
     rotation: 0
     state: true
 - name: qtgui_const_sink_x_1_0
@@ -602,7 +602,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [24, 560]
+    coordinate: [440, 440.0]
     rotation: 0
     state: enabled
 - name: qtgui_freq_sink_x_1
@@ -877,7 +877,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1000, 448.0]
+    coordinate: [872, 468.0]
     rotation: 0
     state: enabled
 - name: virtual_sink_0
@@ -903,7 +903,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [24, 624.0]
+    coordinate: [48, 736.0]
     rotation: 0
     state: true
 
