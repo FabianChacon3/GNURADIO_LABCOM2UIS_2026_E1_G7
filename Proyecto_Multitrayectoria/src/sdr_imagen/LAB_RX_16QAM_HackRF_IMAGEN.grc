@@ -1403,84 +1403,7 @@ blocks:
     comment: Busca tramas, valida CRC32, ordena paquetes y guarda la imagen reconstruida.
     maxoutbuf: '0'
     minoutbuf: '0'
-    _source_code: "import os\nimport struct\nimport zlib\nimport numpy as np\nfrom numpy.lib.stride_tricks import sliding_window_view\n\
-      from gnuradio import gr\n\n# ---------------------------------------------------------------------------\n# Protocolo\
-      \ de trama (identico en TX y RX):\n#   [PREAMBULO 64 simbolos] [CUERPO: cabecera 12 B + datos N B + CRC32 4 B,\n#  \
-      \ blanqueado con PRBS, 2 simbolos 16-QAM por byte] [GUARDA 24 simbolos]\n# Cabecera (big endian): seq u16, total u16,\
-      \ ancho u16, alto u16,\n#                        canales u8, bytes_utiles u8, id_imagen u16\n# ---------------------------------------------------------------------------\n\
-      PRE_LEN = 64\nGUARD_LEN = 24\nHDR_LEN = 12\nHDR_FMT = '>HHHHBBH'\nMAX_MISMATCH = 8\n\n# Tabla 16-QAM Gray (Es = 1),\
-      \ igual que el TX\nPOINTS = np.asarray((\n    -3-3j, -3-1j, -3+3j, -3+1j,\n    -1-3j, -1-1j, -1+3j, -1+1j,\n     3-3j,\
-      \  3-1j,  3+3j,  3+1j,\n     1-3j,  1-1j,  1+3j,  1+1j\n), dtype=np.complex64) / np.sqrt(10.0)\n\n\ndef prng(seed, n,\
-      \ bits):\n    \"\"\"xorshift32 determinista (no depende de la version de numpy).\"\"\"\n    x = (seed & 0xFFFFFFFF)\
-      \ or 1\n    mask = (1 << bits) - 1\n    out = np.empty(n, dtype=np.uint8)\n    for i in range(n):\n        x ^= (x <<\
-      \ 13) & 0xFFFFFFFF\n        x ^= x >> 17\n        x ^= (x << 5) & 0xFFFFFFFF\n        out[i] = (x >> 16) & mask\n  \
-      \  return out\n\n\nPREAMBLE = prng(20261029, PRE_LEN, 4)\n\n\nclass blk(gr.sync_block):\n    \"\"\"Reconstruye una imagen\
-      \ a partir de tramas 16-QAM con CRC32.\n\n    Entrada 0 = indices de simbolo (puerto 0 del constellation_receiver_cb).\n\
-      \    Entrada 1 = muestras sincronizadas (puerto 4 del constellation_receiver_cb).\n    Salidas (float): % de imagen\
-      \ completa, % de tramas con CRC OK, EVM medio (%).\n    La imagen se guarda en out_path (PNG) cada save_every paquetes\
-      \ nuevos y al completarse.\n    \"\"\"\n\n    def __init__(self, out_path='data/resultados/rx_imagen.png', payload_len=128, save_every=10):\n\
-      \        gr.sync_block.__init__(self, name='RX imagen: CRC32 + reensamblado',\n                               in_sig=[np.uint8,\
-      \ np.complex64],\n                               out_sig=[np.float32, np.float32, np.float32])\n        self.out_path\
-      \ = out_path\n        self.payload_len = int(payload_len)\n        self.save_every = max(1, int(save_every))\n     \
-      \   self.body_len = HDR_LEN + self.payload_len + 4\n        self.body_nib = 2 * self.body_len\n        self.frame_len\
-      \ = PRE_LEN + self.body_nib + GUARD_LEN\n        self.whiten = prng(777123, self.body_len, 8)\n        self.indices\
-      \ = np.empty(0, dtype=np.uint8)\n        self.samples = np.empty(0, dtype=np.complex64)\n\n        # Mapas de rotacion:\
-      \ simbolo recibido -> simbolo transmitido canonico\n        self.rotation_maps = []\n        for k in range(4):\n  \
-      \          rotated = POINTS * (1j ** k)\n            self.rotation_maps.append(\n                np.argmin(np.abs(POINTS[:,\
-      \ None] - rotated[None, :]) ** 2,\n                          axis=1).astype(np.uint8))\n\n        self.total_frames\
-      \ = 0\n        self.crc_ok_frames = 0\n        self.evm = -1.0\n        self.progress = 0.0\n        self.ok_pct = 0.0\n\
-      \        self.last_report = 0\n        self.completed_printed = False\n        self._reset_image(None)\n        print('[RX]\
-      \ Buscando preambulo de %d simbolos (4 rotaciones). '\n              'Salida: %s' % (PRE_LEN, os.path.abspath(self.out_path)))\n\
-      \        print('[RX] payload_len=%d B, trama=%d simbolos. Progreso/EVM = -1 '\n              'hasta decodificar una\
-      \ trama.' % (self.payload_len, self.frame_len))\n\n    # ------------------------------------------------------------------\n\
-      \    def _reset_image(self, key):\n        self.key = key\n        self.buf = None\n        self.have = None\n     \
-      \   self.count = 0\n        self.unsaved = 0\n        self.completed_printed = False\n\n    def _save(self):\n     \
-      \   if self.buf is None:\n            return\n        try:\n            from PIL import Image\n            _, _, w,\
-      \ h, ch, _ = self.key\n            mode = 'RGB' if ch == 3 else 'L'\n            im = Image.frombytes(mode, (w, h),\
-      \ bytes(self.buf[:w * h * ch]))\n            base, ext = os.path.splitext(self.out_path)\n            tmp = base + '_tmp'\
-      \ + (ext or '.png')\n            im.save(tmp)\n            os.replace(tmp, self.out_path)\n            self.unsaved\
-      \ = 0\n        except Exception as e:  # noqa: BLE001\n            print('[RX] No se pudo guardar la imagen:', e)\n\n\
-      \    def _store(self, hdr, payload):\n        seq, total, w, h, ch, real, img_id = hdr\n        if total == 0 or w ==\
-      \ 0 or h == 0 or ch not in (1, 3) or seq >= total \\\n                or real > self.payload_len or total * self.payload_len\
-      \ < w * h * ch:\n            return\n        key = (img_id, total, w, h, ch, self.payload_len)\n        if key != self.key:\n\
-      \            self._reset_image(key)\n            self.buf = bytearray(total * self.payload_len)\n            self.have\
-      \ = np.zeros(total, dtype=bool)\n            print('[RX] Nueva imagen detectada: %dx%d, %d canal(es), %d paquetes, id=0x%04X'\n\
-      \                  % (w, h, ch, total, img_id))\n        if not self.have[seq]:\n            self.have[seq] = True\n\
-      \            self.count += 1\n            self.unsaved += 1\n            self.buf[seq * self.payload_len:seq * self.payload_len\
-      \ + real] = payload[:real]\n            self.progress = 100.0 * self.count / total\n            if self.count == total:\n\
-      \                self._save()\n                if not self.completed_printed:\n                    self.completed_printed\
-      \ = True\n                    print('[RX] *** IMAGEN COMPLETA (%d/%d paquetes) -> %s'\n                          % (self.count,\
-      \ total, os.path.abspath(self.out_path)))\n            elif self.unsaved >= self.save_every:\n                self._save()\n\
-      \n    # ------------------------------------------------------------------\n    def _find_preamble(self):\n        n\
-      \ = len(self.indices)\n        if n < PRE_LEN:\n            return None, 0\n        win = sliding_window_view(self.indices,\
-      \ PRE_LEN)\n        mism = np.stack([(lut[win] != PREAMBLE).sum(axis=1)\n                         for lut in self.rotation_maps])\n\
-      \        best = mism.min(axis=0)\n        cand = np.nonzero(best <= MAX_MISMATCH)[0]\n        if len(cand) == 0:\n \
-      \           return None, n - PRE_LEN + 1\n        p = int(cand[0])\n        return (p, int(np.argmin(mism[:, p]))),\
-      \ 0\n\n    def _drop(self, k):\n        self.indices = self.indices[k:]\n        self.samples = self.samples[k:]\n\n\
-      \    def _process(self):\n        while len(self.indices) >= PRE_LEN:\n            found, cut = self._find_preamble()\n\
-      \            if found is None:\n                self._drop(cut)  # conserva PRE_LEN-1 simbolos\n                return\n\
-      \            p, rot = found\n            if len(self.indices) - p < self.frame_len:\n                if p:\n       \
-      \             self._drop(p)\n                return  # la trama aun no llego completa\n            ds = p + PRE_LEN\n\
-      \            de = ds + self.body_nib\n            rec = self.rotation_maps[rot][self.indices[ds:de]]\n            tx\
-      \ = ((rec[0::2] << 4) | rec[1::2]).astype(np.uint8) ^ self.whiten\n            body = tx.tobytes()\n            self.total_frames\
-      \ += 1\n            crc_ok = (struct.unpack('>I', body[-4:])[0] ==\n                      (zlib.crc32(body[:-4]) & 0xFFFFFFFF))\n\
-      \            if crc_ok:\n                self.crc_ok_frames += 1\n                hdr = struct.unpack(HDR_FMT, body[:HDR_LEN])\n\
-      \                self._store(hdr, body[HDR_LEN:HDR_LEN + self.payload_len])\n                # EVM asistido por datos\
-      \ (simbolos transmitidos ya verificados)\n                rx = self.samples[ds:de].astype(np.complex128)\n         \
-      \       ref = POINTS[rec].astype(np.complex128) * (1j ** rot)\n                coef = np.vdot(ref, rx) / (np.vdot(ref,\
-      \ ref) + 1e-15)\n                est = coef * ref\n                en = np.sum(np.abs(est) ** 2)\n                if\
-      \ en > 1e-12:\n                    e = 100.0 * np.sqrt(np.sum(np.abs(rx - est) ** 2) / en)\n                    self.evm\
-      \ = e if self.evm < 0 else 0.9 * self.evm + 0.1 * e\n                self._drop(p + self.frame_len)\n            else:\n\
-      \                # Falsa alarma o trama danada: avanza solo el preambulo\n                self._drop(p + PRE_LEN)\n\
-      \            self.ok_pct = 100.0 * self.crc_ok_frames / self.total_frames\n            if self.total_frames - self.last_report\
-      \ >= 50 or self.total_frames == 1:\n                self.last_report = self.total_frames\n                print('[RX]\
-      \ tramas=%d CRC_OK=%d (%.1f%%) imagen=%.1f%% EVM=%.2f%% rot=%d'\n                      % (self.total_frames, self.crc_ok_frames,\
-      \ self.ok_pct,\n                         self.progress, self.evm, rot * 90))\n\n    def work(self, input_items, output_items):\n\
-      \        n = min(len(input_items[0]), len(input_items[1]),\n                *(len(v) for v in output_items))\n     \
-      \   if n <= 0:\n            return 0\n        self.indices = np.concatenate(\n            (self.indices, np.asarray(input_items[0][:n],\
-      \ dtype=np.uint8)))\n        self.samples = np.concatenate(\n            (self.samples, np.asarray(input_items[1][:n],\
-      \ dtype=np.complex64)))\n        self._process()\n        output_items[0][:n] = self.progress\n        output_items[1][:n]\
-      \ = self.ok_pct\n        output_items[2][:n] = self.evm\n        return n\n"
+    _source_code: "import os\nimport struct\nimport zlib\nimport numpy as np\nfrom numpy.lib.stride_tricks import sliding_window_view\nfrom gnuradio import gr\n\n# ---------------------------------------------------------------------------\n# Protocolo de trama (identico en TX y RX):\n#   [PREAMBULO 64 simbolos] [CUERPO: cabecera 12 B + datos N B + CRC32 4 B,\n#   blanqueado con PRBS, 2 simbolos 16-QAM por byte] [GUARDA 24 simbolos]\n# Cabecera (big endian): seq u16, total u16, ancho u16, alto u16,\n#                        canales u8, bytes_utiles u8, id_imagen u16\n# ---------------------------------------------------------------------------\nPRE_LEN = 64\nGUARD_LEN = 24\nHDR_LEN = 12\nHDR_FMT = '>HHHHBBH'\nMAX_MISMATCH = 8\n\n# Tabla 16-QAM Gray (Es = 1), igual que el TX\nPOINTS = np.asarray((\n    -3-3j, -3-1j, -3+3j, -3+1j,\n    -1-3j, -1-1j, -1+3j, -1+1j,\n     3-3j,  3-1j,  3+3j,  3+1j,\n     1-3j,  1-1j,  1+3j,  1+1j\n), dtype=np.complex64) / np.sqrt(10.0)\n\n\ndef prng(seed, n, bits):\n    \"\"\"xorshift32 determinista (no depende de la version de numpy).\"\"\"\n    x = (seed & 0xFFFFFFFF) or 1\n    mask = (1 << bits) - 1\n    out = np.empty(n, dtype=np.uint8)\n    for i in range(n):\n        x ^= (x << 13) & 0xFFFFFFFF\n        x ^= x >> 17\n        x ^= (x << 5) & 0xFFFFFFFF\n        out[i] = (x >> 16) & mask\n    return out\n\n\nPREAMBLE = prng(20261029, PRE_LEN, 4)\n\n\nclass blk(gr.sync_block):\n    \"\"\"Reconstruye una imagen a partir de tramas 16-QAM con CRC32.\n\n    Entrada 0 = indices de simbolo (puerto 0 del constellation_receiver_cb).\n    Entrada 1 = muestras sincronizadas (puerto 4 del constellation_receiver_cb).\n    Salidas (float): % de imagen completa, % de tramas con CRC OK, EVM medio (%).\n    La imagen se guarda en out_path (PNG) cada save_every paquetes nuevos y al completarse.\n    \"\"\"\n\n    def __init__(self, out_path='data/resultados/rx_imagen.png', payload_len=128, save_every=10):\n        gr.sync_block.__init__(self, name='RX imagen: CRC32 + reensamblado',\n                               in_sig=[np.uint8, np.complex64],\n                               out_sig=[np.float32, np.float32, np.float32])\n        self.out_path = out_path\n        self.payload_len = int(payload_len)\n        self.save_every = max(1, int(save_every))\n        self.body_len = HDR_LEN + self.payload_len + 4\n        self.body_nib = 2 * self.body_len\n        self.frame_len = PRE_LEN + self.body_nib + GUARD_LEN\n        self.whiten = prng(777123, self.body_len, 8)\n        self.indices = np.empty(0, dtype=np.uint8)\n        self.samples = np.empty(0, dtype=np.complex64)\n\n        # Mapas de rotacion: simbolo recibido -> simbolo transmitido canonico\n        self.rotation_maps = []\n        for k in range(4):\n            rotated = POINTS * (1j ** k)\n            self.rotation_maps.append(\n                np.argmin(np.abs(POINTS[:, None] - rotated[None, :]) ** 2,\n                          axis=1).astype(np.uint8))\n\n        self.total_frames = 0\n        self.crc_ok_frames = 0\n        self.evm = -1.0\n        self.progress = 0.0\n        self.ok_pct = 0.0\n        self.last_report = 0\n        self.completed_printed = False\n        self._reset_image(None)\n        print('[RX] Buscando preambulo de %d simbolos (4 rotaciones). '\n              'Salida: %s' % (PRE_LEN, self.out_path))\n        print('[RX] payload_len=%d B, trama=%d simbolos. Progreso/EVM = -1 '\n              'hasta decodificar una trama.' % (self.payload_len, self.frame_len))\n\n    # ------------------------------------------------------------------\n    def _reset_image(self, key):\n        self.key = key\n        self.buf = None\n        self.have = None\n        self.count = 0\n        self.unsaved = 0\n        self.completed_printed = False\n\n    def _resolve_out_path(self):\n        path = self.out_path\n        if not os.path.isabs(path):\n            module_path = globals().get('__file__')\n            if module_path:\n                path = os.path.join(os.path.dirname(module_path), path)\n        path = os.path.abspath(path)\n        os.makedirs(os.path.dirname(path), exist_ok=True)\n        return path\n\n    def _save(self):\n        if self.buf is None:\n            return\n        try:\n            from PIL import Image\n            _, _, w, h, ch, _ = self.key\n            mode = 'RGB' if ch == 3 else 'L'\n            im = Image.frombytes(mode, (w, h), bytes(self.buf[:w * h * ch]))\n            out_path = self._resolve_out_path()\n            base, ext = os.path.splitext(out_path)\n            tmp = base + '_tmp' + (ext or '.png')\n            im.save(tmp)\n            os.replace(tmp, out_path)\n            self.unsaved = 0\n        except Exception as e:  # noqa: BLE001\n            print('[RX] No se pudo guardar la imagen:', e)\n\n    def _store(self, hdr, payload):\n        seq, total, w, h, ch, real, img_id = hdr\n        if total == 0 or w == 0 or h == 0 or ch not in (1, 3) or seq >= total \\\n                or real > self.payload_len or total * self.payload_len < w * h * ch:\n            return\n        key = (img_id, total, w, h, ch, self.payload_len)\n        if key != self.key:\n            self._reset_image(key)\n            self.buf = bytearray(total * self.payload_len)\n            self.have = np.zeros(total, dtype=bool)\n            print('[RX] Nueva imagen detectada: %dx%d, %d canal(es), %d paquetes, id=0x%04X'\n                  % (w, h, ch, total, img_id))\n        if not self.have[seq]:\n            self.have[seq] = True\n            self.count += 1\n            self.unsaved += 1\n            self.buf[seq * self.payload_len:seq * self.payload_len + real] = payload[:real]\n            self.progress = 100.0 * self.count / total\n            if self.count == total:\n                self._save()\n                if not self.completed_printed:\n                    self.completed_printed = True\n                    print('[RX] *** IMAGEN COMPLETA (%d/%d paquetes) -> %s'\n                          % (self.count, total, self._resolve_out_path()))\n            elif self.unsaved >= self.save_every:\n                self._save()\n\n    # ------------------------------------------------------------------\n    def _find_preamble(self):\n        n = len(self.indices)\n        if n < PRE_LEN:\n            return None, 0\n        win = sliding_window_view(self.indices, PRE_LEN)\n        mism = np.stack([(lut[win] != PREAMBLE).sum(axis=1)\n                         for lut in self.rotation_maps])\n        best = mism.min(axis=0)\n        cand = np.nonzero(best <= MAX_MISMATCH)[0]\n        if len(cand) == 0:\n            return None, n - PRE_LEN + 1\n        p = int(cand[0])\n        return (p, int(np.argmin(mism[:, p]))), 0\n\n    def _drop(self, k):\n        self.indices = self.indices[k:]\n        self.samples = self.samples[k:]\n\n    def _process(self):\n        while len(self.indices) >= PRE_LEN:\n            found, cut = self._find_preamble()\n            if found is None:\n                self._drop(cut)  # conserva PRE_LEN-1 simbolos\n                return\n            p, rot = found\n            if len(self.indices) - p < self.frame_len:\n                if p:\n                    self._drop(p)\n                return  # la trama aun no llego completa\n            ds = p + PRE_LEN\n            de = ds + self.body_nib\n            rec = self.rotation_maps[rot][self.indices[ds:de]]\n            tx = ((rec[0::2] << 4) | rec[1::2]).astype(np.uint8) ^ self.whiten\n            body = tx.tobytes()\n            self.total_frames += 1\n            crc_ok = (struct.unpack('>I', body[-4:])[0] ==\n                      (zlib.crc32(body[:-4]) & 0xFFFFFFFF))\n            if crc_ok:\n                self.crc_ok_frames += 1\n                hdr = struct.unpack(HDR_FMT, body[:HDR_LEN])\n                self._store(hdr, body[HDR_LEN:HDR_LEN + self.payload_len])\n                # EVM asistido por datos (simbolos transmitidos ya verificados)\n                rx = self.samples[ds:de].astype(np.complex128)\n                ref = POINTS[rec].astype(np.complex128) * (1j ** rot)\n                coef = np.vdot(ref, rx) / (np.vdot(ref, ref) + 1e-15)\n                est = coef * ref\n                en = np.sum(np.abs(est) ** 2)\n                if en > 1e-12:\n                    e = 100.0 * np.sqrt(np.sum(np.abs(rx - est) ** 2) / en)\n                    self.evm = e if self.evm < 0 else 0.9 * self.evm + 0.1 * e\n                self._drop(p + self.frame_len)\n            else:\n                # Falsa alarma o trama danada: avanza solo el preambulo\n                self._drop(p + PRE_LEN)\n            self.ok_pct = 100.0 * self.crc_ok_frames / self.total_frames\n            if self.total_frames - self.last_report >= 50 or self.total_frames == 1:\n                self.last_report = self.total_frames\n                print('[RX] tramas=%d CRC_OK=%d (%.1f%%) imagen=%.1f%% EVM=%.2f%% rot=%d'\n                      % (self.total_frames, self.crc_ok_frames, self.ok_pct,\n                         self.progress, self.evm, rot * 90))\n\n    def work(self, input_items, output_items):\n        n = min(len(input_items[0]), len(input_items[1]),\n                *(len(v) for v in output_items))\n        if n <= 0:\n            return 0\n        self.indices = np.concatenate(\n            (self.indices, np.asarray(input_items[0][:n], dtype=np.uint8)))\n        self.samples = np.concatenate(\n            (self.samples, np.asarray(input_items[1][:n], dtype=np.complex64)))\n        self._process()\n        output_items[0][:n] = self.progress\n        output_items[1][:n] = self.ok_pct\n        output_items[2][:n] = self.evm\n        return n\n"
     out_path: out_path
     payload_len: payload_len
     save_every: save_every
@@ -1729,18 +1652,52 @@ blocks:
     rotation: 0
     state: enabled
 - name: rx_log_iq_64ksps
-  id: blocks_file_sink
+  id: epy_block
   parameters:
     affinity: ''
     alias: ''
-    comment: Registro binario opcional; ocupa espacio y se guarda en data/resultados.
+    comment: Registro opcional IQ relativo al flujo.
     maxoutbuf: '0'
     minoutbuf: '0'
-    type: complex
-    file: os.path.abspath(os.path.join("data", "resultados", "RX_IQ_64ksps.c64"))
-    vlen: '1'
-    unbuffered: 'False'
-    append: 'False'
+    _source_code: |
+      import os
+      import numpy as np
+      from gnuradio import gr
+
+      class blk(gr.sync_block):
+          def __init__(self, file_path='data/resultados/registro.bin', item_type='complex'):
+              self.dtype = np.complex64 if item_type == 'complex' else np.uint8
+              gr.sync_block.__init__(self, name='Registro binario opcional',
+                                     in_sig=[self.dtype], out_sig=[])
+              self.file_path = file_path
+              self.handle = None
+
+          def _open(self):
+              path = self.file_path
+              if not os.path.isabs(path):
+                  module_path = globals().get('__file__')
+                  if module_path:
+                      path = os.path.join(os.path.dirname(module_path), path)
+              path = os.path.abspath(path)
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              self.handle = open(path, 'wb')
+              print('[RX] Registro binario: %s' % path)
+
+          def work(self, input_items, output_items):
+              data = input_items[0]
+              if len(data):
+                  if self.handle is None:
+                      self._open()
+                  self.handle.write(np.ascontiguousarray(data, dtype=self.dtype).tobytes())
+              return len(data)
+
+          def stop(self):
+              if self.handle is not None:
+                  self.handle.close()
+                  self.handle = None
+              return True
+    file_path: "'data/resultados/RX_IQ_64ksps.c64'"
+    item_type: "'complex'"
   states:
     bus_sink: false
     bus_source: false
@@ -1751,18 +1708,52 @@ blocks:
     rotation: 0
     state: disabled
 - name: rx_log_indices_simbolos
-  id: blocks_file_sink
+  id: epy_block
   parameters:
     affinity: ''
     alias: ''
-    comment: Registro binario opcional de decisiones; se guarda en data/resultados.
+    comment: Registro opcional de decisiones relativo al flujo.
     maxoutbuf: '0'
     minoutbuf: '0'
-    type: byte
-    file: os.path.abspath(os.path.join("data", "resultados", "RX_simbolos_decididos.u8"))
-    vlen: '1'
-    unbuffered: 'False'
-    append: 'False'
+    _source_code: |
+      import os
+      import numpy as np
+      from gnuradio import gr
+
+      class blk(gr.sync_block):
+          def __init__(self, file_path='data/resultados/registro.bin', item_type='complex'):
+              self.dtype = np.complex64 if item_type == 'complex' else np.uint8
+              gr.sync_block.__init__(self, name='Registro binario opcional',
+                                     in_sig=[self.dtype], out_sig=[])
+              self.file_path = file_path
+              self.handle = None
+
+          def _open(self):
+              path = self.file_path
+              if not os.path.isabs(path):
+                  module_path = globals().get('__file__')
+                  if module_path:
+                      path = os.path.join(os.path.dirname(module_path), path)
+              path = os.path.abspath(path)
+              os.makedirs(os.path.dirname(path), exist_ok=True)
+              self.handle = open(path, 'wb')
+              print('[RX] Registro binario: %s' % path)
+
+          def work(self, input_items, output_items):
+              data = input_items[0]
+              if len(data):
+                  if self.handle is None:
+                      self._open()
+                  self.handle.write(np.ascontiguousarray(data, dtype=self.dtype).tobytes())
+              return len(data)
+
+          def stop(self):
+              if self.handle is not None:
+                  self.handle.close()
+                  self.handle = None
+              return True
+    file_path: "'data/resultados/RX_simbolos_decididos.u8'"
+    item_type: "'byte'"
   states:
     bus_sink: false
     bus_source: false
@@ -1776,7 +1767,7 @@ blocks:
   id: variable
   parameters:
     comment: PNG reconstruido dentro de data/resultados al abrir el flujo desde esta carpeta.
-    value: os.path.abspath(os.path.join("data", "resultados", "rx_imagen.png"))
+    value: "'data/resultados/rx_imagen.png'"
   states:
     bus_sink: false
     bus_source: false

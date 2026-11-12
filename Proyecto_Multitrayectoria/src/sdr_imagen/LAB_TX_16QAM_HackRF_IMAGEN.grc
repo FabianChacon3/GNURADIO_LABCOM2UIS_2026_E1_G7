@@ -1002,51 +1002,157 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    comment: Convierte la imagen a bytes y genera tramas 16-QAM con preambulo, cabecera, CRC32 y guarda.
+    comment: "Convierte la imagen real a bytes y genera tramas 16-QAM con preambulo, cabecera, CRC32 y guarda. test_mode es falso por defecto."
     maxoutbuf: '0'
     minoutbuf: '0'
-    _source_code: "import os\nimport struct\nimport zlib\nimport numpy as np\nfrom gnuradio import gr\n\n# ---------------------------------------------------------------------------\n\
-      # Protocolo de trama (identico en TX y RX):\n#   [PREAMBULO 64 simbolos] [CUERPO: cabecera 12 B + datos N B + CRC32\
-      \ 4 B,\n#   blanqueado con PRBS, 2 simbolos 16-QAM por byte] [GUARDA 24 simbolos]\n# Cabecera (big endian): seq u16,\
-      \ total u16, ancho u16, alto u16,\n#                        canales u8, bytes_utiles u8, id_imagen u16\n# La imagen\
-      \ se repite ciclicamente: el RX reconstruye aunque pierda paquetes.\n# ---------------------------------------------------------------------------\n\
-      PRE_LEN = 64\nGUARD_LEN = 24\nHDR_LEN = 12\nHDR_FMT = '>HHHHBBH'\n\n\ndef prng(seed, n, bits):\n    \"\"\"xorshift32\
-      \ determinista (no depende de la version de numpy).\"\"\"\n    x = (seed & 0xFFFFFFFF) or 1\n    mask = (1 << bits)\
-      \ - 1\n    out = np.empty(n, dtype=np.uint8)\n    for i in range(n):\n        x ^= (x << 13) & 0xFFFFFFFF\n        x\
-      \ ^= x >> 17\n        x ^= (x << 5) & 0xFFFFFFFF\n        out[i] = (x >> 16) & mask\n    return out\n\n\nPREAMBLE =\
-      \ prng(20261029, PRE_LEN, 4)\nGUARD = prng(160116, GUARD_LEN, 4)\n\n\ndef load_image(path, w, h, ch):\n    from PIL\
-      \ import Image, ImageDraw\n    mode = 'RGB' if ch == 3 else 'L'\n    if os.path.isfile(path):\n        im = Image.open(path)\n\
-      \        if im.mode in ('RGBA', 'LA', 'P'):\n            im = im.convert('RGBA')\n            fondo = Image.new('RGBA',\
-      \ im.size, (255, 255, 255, 255))\n            im = Image.alpha_composite(fondo, im)\n        im = im.convert(mode).resize((w,\
-      \ h), Image.LANCZOS)\n        print('[TX] Imagen cargada: %s -> %dx%d, %d canal(es)' % (path, w, h, ch))\n    else:\n\
-      \        print('[TX] AVISO: no existe \"%s\" (carpeta actual: %s). Se envia una '\n              'imagen de PRUEBA.'\
-      \ % (path, os.getcwd()))\n        im = Image.new('RGB', (w, h), (255, 255, 255))\n        d = ImageDraw.Draw(im)\n \
-      \       colores = [(255, 0, 0), (0, 160, 0), (0, 0, 255), (255, 200, 0), (0, 0, 0)]\n        bw = max(1, w // len(colores))\n\
-      \        for i, c in enumerate(colores):\n            d.rectangle([i * bw, 0, (i + 1) * bw - 1, h // 2], fill=c)\n \
-      \       d.rectangle([2, h // 2 + 4, w - 3, h - 3], outline=(0, 0, 0))\n        d.text((8, h // 2 + 10), 'PRUEBA 16-QAM',\
-      \ fill=(0, 0, 0))\n        im = im.convert(mode)\n    return im\n\n\nclass blk(gr.sync_block):\n    \"\"\"Transmite\
-      \ ciclicamente una imagen como tramas de indices 16-QAM (0..15).\"\"\"\n\n    def __init__(self, image_path='../../images/imagenes_sdr/Logouis.png',\
-      \ width=160, height=80,\n                 channels=3, payload_len=128):\n        gr.sync_block.__init__(self, name='TX\
-      \ imagen: tramas + CRC32',\n                               in_sig=None, out_sig=[np.uint8])\n        self.image_path\
-      \ = image_path\n        self.width = int(width)\n        self.height = int(height)\n        self.channels = 3 if int(channels)\
-      \ == 3 else 1\n        self.payload_len = int(payload_len)\n        if not (1 <= self.payload_len <= 255):\n       \
-      \     raise ValueError('payload_len debe estar entre 1 y 255')\n        if self.width > 65535 or self.height > 65535:\n\
-      \            raise ValueError('ancho/alto demasiado grandes')\n\n        im = load_image(self.image_path, self.width,\
-      \ self.height, self.channels)\n        data = im.tobytes()\n        img_id = zlib.crc32(data) & 0xFFFF\n        plen\
-      \ = self.payload_len\n        npk = (len(data) + plen - 1) // plen\n        whiten = prng(777123, HDR_LEN + plen + 4,\
-      \ 8)\n\n        frames = []\n        for seq in range(npk):\n            chunk = data[seq * plen:(seq + 1) * plen]\n\
-      \            real = len(chunk)\n            chunk = chunk.ljust(plen, b'\\x00')\n            hdr = struct.pack(HDR_FMT,\
-      \ seq, npk, self.width, self.height,\n                              self.channels, real, img_id)\n            body =\
-      \ hdr + chunk\n            body += struct.pack('>I', zlib.crc32(body) & 0xFFFFFFFF)\n            tx = np.frombuffer(body,\
-      \ dtype=np.uint8) ^ whiten\n            nib = np.empty(2 * len(tx), dtype=np.uint8)\n            nib[0::2] = tx >> 4\n\
-      \            nib[1::2] = tx & 15\n            frames.append(np.concatenate((PREAMBLE, nib, GUARD)))\n        self.frame_all\
-      \ = np.concatenate(frames).astype(np.uint8)\n        self.position = 0\n        print('[TX] %d bytes -> %d paquetes\
-      \ de %d B; trama = %d simbolos; '\n              'ciclo completo = %d simbolos (~%.1f s a 8 ksym/s); id=0x%04X'\n  \
-      \            % (len(data), npk, plen, len(frames[0]), len(self.frame_all),\n                 len(self.frame_all) / 8000.0,\
-      \ img_id))\n\n    def work(self, input_items, output_items):\n        out = output_items[0]\n        n = len(out)\n\
-      \        if n < 1:\n            return 0\n        L = len(self.frame_all)\n        pos = (self.position + np.arange(n,\
-      \ dtype=np.int64)) % L\n        out[:] = self.frame_all[pos]\n        self.position = (self.position + n) % L\n    \
-      \    return n\n"
+    test_mode: 'False'
+    _source_code: |
+      import os
+      import struct
+      import zlib
+      import numpy as np
+      from gnuradio import gr
+
+      # ---------------------------------------------------------------------------
+      # Protocolo de trama (identico en TX y RX):
+      #   [PREAMBULO 64 simbolos] [CUERPO: cabecera 12 B + datos N B + CRC32 4 B,
+      #   blanqueado con PRBS, 2 simbolos 16-QAM por byte] [GUARDA 24 simbolos]
+      # Cabecera (big endian): seq u16, total u16, ancho u16, alto u16,
+      #                        canales u8, bytes_utiles u8, id_imagen u16
+      # La imagen se repite ciclicamente: el RX reconstruye aunque pierda paquetes.
+      # ---------------------------------------------------------------------------
+      PRE_LEN = 64
+      GUARD_LEN = 24
+      HDR_LEN = 12
+      HDR_FMT = '>HHHHBBH'
+
+
+      def prng(seed, n, bits):
+          """xorshift32 determinista (no depende de la version de numpy)."""
+          x = (seed & 0xFFFFFFFF) or 1
+          mask = (1 << bits) - 1
+          out = np.empty(n, dtype=np.uint8)
+          for i in range(n):
+              x ^= (x << 13) & 0xFFFFFFFF
+              x ^= x >> 17
+              x ^= (x << 5) & 0xFFFFFFFF
+              out[i] = (x >> 16) & mask
+          return out
+
+      PREAMBLE = prng(20261029, PRE_LEN, 4)
+      GUARD = prng(160116, GUARD_LEN, 4)
+
+      def resolve_image_path(path):
+          if os.path.isabs(path):
+              return path
+          module_path = globals().get('__file__')
+          base = os.path.dirname(module_path) if module_path else os.getcwd()
+          return os.path.abspath(os.path.join(base, path))
+
+      def load_image(path, w, h, ch, test_mode=False):
+          from PIL import Image, ImageDraw
+
+          mode = 'RGB' if ch == 3 else 'L'
+          resolved = resolve_image_path(path) if path else ''
+          if resolved and os.path.isfile(resolved):
+              with Image.open(resolved) as source:
+                  if source.mode in ('RGBA', 'LA', 'P'):
+                      source = source.convert('RGBA')
+                      fondo = Image.new('RGBA', source.size, (255, 255, 255, 255))
+                      source = Image.alpha_composite(fondo, source)
+                  im = source.convert(mode).resize((w, h), Image.LANCZOS)
+              print('[TX] Imagen cargada: %s -> %dx%d, %d canal(es)' %
+                    (resolved, w, h, ch))
+              return im
+
+          if not test_mode:
+              raise FileNotFoundError(
+                  '[TX] No se encontro el PNG de entrada: %s. '
+                  'Corrige image_path o activa test_mode solo para una prueba.'
+                  % (resolved or str(path))
+              )
+
+          print('[TX] MODO PRUEBA explicito: se genera un patron sintetico.')
+          im = Image.new('RGB', (w, h), (255, 255, 255))
+          d = ImageDraw.Draw(im)
+          colores = [(255, 0, 0), (0, 160, 0), (0, 0, 255),
+                     (255, 200, 0), (0, 0, 0)]
+          bw = max(1, w // len(colores))
+          for i, c in enumerate(colores):
+              d.rectangle([i * bw, 0, (i + 1) * bw - 1, h // 2], fill=c)
+          if w > 2 and h > 2:
+              x0 = min(2, w - 1)
+              x1 = max(x0, w - 3)
+              y0 = min(h - 1, h // 2 + 1)
+              d.rectangle([x0, y0, x1, h - 1], outline=(0, 0, 0))
+          d.text((min(8, w - 1), min(h // 2 + 2, h - 1)),
+                 'PRUEBA 16-QAM', fill=(0, 0, 0))
+          return im.convert(mode)
+
+      class blk(gr.sync_block):
+          """Transmite ciclicamente una imagen como tramas de indices 16-QAM (0..15)."""
+
+          def __init__(self, image_path='../../images/imagenes_sdr/Logouis.png',
+                       width=160, height=80, channels=3, payload_len=128,
+                       test_mode=False):
+              gr.sync_block.__init__(self, name='TX imagen: tramas + CRC32',
+                                     in_sig=None, out_sig=[np.uint8])
+              self.image_path = image_path
+              self.test_mode = bool(test_mode)
+              self.width = int(width)
+              self.height = int(height)
+              self.channels = 3 if int(channels) == 3 else 1
+              self.payload_len = int(payload_len)
+              if not (1 <= self.payload_len <= 255):
+                  raise ValueError('payload_len debe estar entre 1 y 255')
+              if self.width > 65535 or self.height > 65535:
+                  raise ValueError('ancho/alto demasiado grandes')
+
+              self.frame_all = None
+              self.position = 0
+
+          def _prepare_frames(self):
+              im = load_image(self.image_path, self.width, self.height,
+                              self.channels, self.test_mode)
+              data = im.tobytes()
+              img_id = zlib.crc32(data) & 0xFFFF
+              plen = self.payload_len
+              npk = (len(data) + plen - 1) // plen
+              whiten = prng(777123, HDR_LEN + plen + 4, 8)
+
+              frames = []
+              for seq in range(npk):
+                  chunk = data[seq * plen:(seq + 1) * plen]
+                  real = len(chunk)
+                  chunk = chunk.ljust(plen, b'\x00')
+                  hdr = struct.pack(HDR_FMT, seq, npk, self.width, self.height,
+                                    self.channels, real, img_id)
+                  body = hdr + chunk
+                  body += struct.pack('>I', zlib.crc32(body) & 0xFFFFFFFF)
+                  tx = np.frombuffer(body, dtype=np.uint8) ^ whiten
+                  nib = np.empty(2 * len(tx), dtype=np.uint8)
+                  nib[0::2] = tx >> 4
+                  nib[1::2] = tx & 15
+                  frames.append(np.concatenate((PREAMBLE, nib, GUARD)))
+              self.frame_all = np.concatenate(frames).astype(np.uint8)
+              print('[TX] %d bytes -> %d paquetes de %d B; trama = %d simbolos; '
+                    'ciclo completo = %d simbolos (~%.1f s a 8 ksym/s); id=0x%04X'
+                    % (len(data), npk, plen, len(frames[0]), len(self.frame_all),
+                       len(self.frame_all) / 8000.0, img_id))
+
+          def work(self, input_items, output_items):
+              if self.frame_all is None:
+                  self._prepare_frames()
+              out = output_items[0]
+              n = len(out)
+              if n < 1:
+                  return 0
+              L = len(self.frame_all)
+              pos = (self.position + np.arange(n, dtype=np.int64)) % L
+              out[:] = self.frame_all[pos]
+              self.position = (self.position + n) % L
+              return n
+
     image_path: image_path
     width: img_width
     height: img_height
@@ -1207,8 +1313,8 @@ blocks:
 - name: image_path
   id: variable
   parameters:
-    comment: Ruta del logo en ../../images/imagenes_sdr desde esta carpeta.
-    value: os.path.abspath(os.path.join("..", "..", "images", "imagenes_sdr", "Logouis.png"))
+    comment: Ruta relativa a este GRC; se resuelve al ejecutar el flujo.
+    value: "'../../images/imagenes_sdr/Logouis.png'"
   states:
     bus_sink: false
     bus_source: false

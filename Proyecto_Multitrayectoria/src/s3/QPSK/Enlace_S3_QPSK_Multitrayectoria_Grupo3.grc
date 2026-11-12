@@ -310,7 +310,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1368, 64.0]
+    coordinate: [1735.5, -11.0]
     rotation: 0
     state: enabled
 - name: interp_fir_filter_xxx_0
@@ -359,7 +359,8 @@ blocks:
     color7: '"yellow"'
     color8: '"dark red"'
     color9: '"dark green"'
-    comment: Muestra las muestras complejas a la salida del canal, no decisiones de simbolo.
+    comment: Muestra las muestras complejas a la salida del canal, no decisiones de
+      simbolo.
     grid: 'True'
     gui_hint: 3,0,1,1
     label1: '"Senal con multitrayectoria"'
@@ -474,7 +475,7 @@ blocks:
     legend: 'True'
     maxoutbuf: '0'
     minoutbuf: '0'
-    name: "Espectro relativo Rx (S3)"
+    name: Espectro relativo Rx (S3)
     nconnections: '1'
     norm_window: 'False'
     showports: 'False'
@@ -623,6 +624,7 @@ blocks:
     coordinate: [1152, 240.0]
     rotation: 0
     state: enabled
+
 connections:
 - [analog_random_source_x_0, '0', blocks_pack_k_bits_bb_0, '0']
 - [blocks_pack_k_bits_bb_0, '0', blocks_packed_to_unpacked_xx_0, '0']

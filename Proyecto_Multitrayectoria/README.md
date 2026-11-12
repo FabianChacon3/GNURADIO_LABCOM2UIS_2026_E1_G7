@@ -30,6 +30,25 @@ Los dos GRC S3 compilaron con GNU Radio 3.10.12 y se iniciaron brevemente en mod
 
 El [selector de casos S3](docs/selector_casos_s3.html) documenta e interactúa con las cuatro condiciones y los valores de `H(0)` y `H(Rs/2)`.
 
+## Estado de validación
+
+| GRC | Comprobación | Resultado | Evidencia o pendiente |
+|---|---|---|---|
+| QPSK | Compilación y parámetros | Aprobado | Pruebas reproducibles en `tests/test_grc_validation.py` |
+| QPSK | Mapeo bit-símbolo | Aprobado (prueba automática) | Falta captura real de la secuencia conocida en GNU Radio |
+| QPSK | Canal, taps y retardo | Aprobado (prueba automática) | Falta captura de la prueba impulsional ejecutada en GNU Radio |
+| QPSK | Visores QT | Pendiente por validación manual | Ejecutar el GRC y capturar constelación, tiempo y frecuencia |
+| BPSK | Compilación y parámetros | Aprobado | Pruebas reproducibles en `tests/test_grc_validation.py` |
+| BPSK | Mapeo bit-símbolo | Aprobado (prueba automática) | Falta captura real de la secuencia conocida en GNU Radio |
+| BPSK | Canal, taps y retardo | Aprobado (prueba automática) | Falta captura de la prueba impulsional ejecutada en GNU Radio |
+| BPSK | Visores QT | Pendiente por validación manual | Ejecutar el GRC y capturar constelación, tiempo y frecuencia |
+| TX imagen | Compilación y protocolo | Aprobado automáticamente | Pruebas de framing, cabecera, CRC y tabla 16-QAM |
+| RX imagen | Protocolo, rotaciones y CRC | Aprobado automáticamente | Pruebas unitarias con las cuatro rotaciones |
+| TX/RX imagen | Prueba extremo a extremo software | Aprobado automáticamente | Reconstrucción exacta de imagen pequeña en prueba unitaria |
+| TX/RX imagen | Transmisión física HackRF | Pendiente por hardware | No se ha ejecutado una transmisión RF |
+
+Las nueve pruebas automáticas se ejecutaron correctamente con el entorno GNU Radio 3.10.12 del proyecto mediante `C:\Users\Fabia\radioconda\python.exe -m unittest discover -s Proyecto_Multitrayectoria\tests -v`. Las capturas QT no se consideran aprobadas hasta guardarse como archivos reales en `images/evidencias_grc/`.
+
 ## Procedencia y archivos S3
 
 - GRC QPSK principal: [Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc](src/s3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc)
@@ -49,6 +68,16 @@ python scripts/analisis/analizar_s3.py
 ```
 
 Se requieren NumPy y Matplotlib. El script escribe cuatro PNG y cuatro CSV en `data/figuras_s3/`. Usa los taps definidos, una secuencia determinista y prehistoria cero; las salidas son resultados analíticos del modelo, no mediciones de GNU Radio.
+
+Para generar la animación explicativa y la lámina para el informe:
+
+```bash
+python scripts/analisis/animar_s3.py
+```
+
+El script crea `images/figuras_s3/s3_cambios_parametros_modelo.png`, una copia GIF para el informe y otra en `blog/media/`. La animación recorre referencia, eco suave, medio y fuerte mostrando constelación, secuencia temporal y taps. Es una visualización analítica rotulada; no sustituye capturas reales de GNU Radio.
+
+También genera la variante con ruido `s3_cambios_parametros_modelo_ruido.gif/.png`, usando ruido complejo sintético reproducible con desviación estándar 0,05, y la tabla descargable `data/figuras_s3/s3_tabla_resumen.csv`. La variante con ruido ilustra el efecto esperado de `noise_amp=0.05`, pero tampoco es una medición experimental.
 
 ## Prácticas SDR e imágenes
 
