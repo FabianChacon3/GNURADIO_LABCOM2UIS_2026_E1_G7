@@ -255,9 +255,12 @@ def plot_impulse_response() -> None:
 
 def plot_frequency_response(frequencies_hz: np.ndarray) -> None:
     fig, axes = plt.subplots(2, 1, figsize=(10.0, 7.2), sharex=True)
+    phases_deg = []
     for (name, echo), color in zip(TESTS, COLORS):
         response = frequency_response(echo, frequencies_hz)
         mag = np.abs(response)
+        phase_deg = np.angle(response, deg=True)
+        phases_deg.extend(phase_deg)
         axes[0].plot(
             frequencies_hz / 1000.0,
             20.0 * np.log10(np.maximum(mag, 1e-12)),
@@ -266,20 +269,26 @@ def plot_frequency_response(frequencies_hz: np.ndarray) -> None:
         )
         axes[1].plot(
             frequencies_hz / 1000.0,
-            np.angle(response, deg=True),
+            phase_deg,
             color=color,
             label=name,
         )
+    axes[0].axhline(0.0, color="#697783", linewidth=1.0, alpha=0.65)
+    axes[1].axhline(0.0, color="#697783", linewidth=1.0, alpha=0.65)
     axes[0].set_ylabel("20 log₁₀ |H(f)| [dB]")
     axes[1].set_ylabel("∠H(f) [grados]")
-    axes[1].set_xlabel("Frecuencia f [kHz]")
-    axes[1].set_ylim(-180, 180)
+    axes[1].set_xlabel("Frecuencia f [kHz] (un período de la respuesta discreta)")
+    phase_limit = max(2.0, float(np.max(np.abs(phases_deg))) * 1.18)
+    axes[1].set_ylim(-phase_limit, phase_limit)
+    axes[1].set_xticks(np.linspace(frequencies_hz[0], frequencies_hz[-1], 5) / 1000.0)
+    delay_us = f"{1e6 / RS:.2f}".replace(".", ",")
     for ax in axes:
         ax.grid(True, alpha=0.25)
         ax.legend(title="Tap del eco")
     fig.suptitle(
         "Respuesta frecuencial del canal S3\n"
-        f"H(f)=1+c·exp(−j2πfτ), τ=1/Rs; respuesta del canal, no PSD"
+        f"H(f)=1+c·exp(−j2πfτ), τ=D/fs=1/Rs={delay_us} µs; "
+        f"un período fs/D=Rs={RS / 1000:g} kHz; no es una PSD"
     )
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "s3_respuesta_frecuencial_modelo.png", dpi=220)
