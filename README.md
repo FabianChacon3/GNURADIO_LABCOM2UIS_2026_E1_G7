@@ -13,7 +13,7 @@ La referencia `Lab4_...` del esquema inicial era un marcador de posición; no ha
 
 ## Proyecto de multitrayectoria
 
-El proyecto incluye los GRC S3, el análisis Python reproducible, los GRC SDR de imagen, las evidencias multimedia y un [blog local](Proyecto_Multitrayectoria/blog/index.html). La nueva versión del blog está preparada para GitHub Pages; se indicará su dirección pública cuando el despliegue se verifique.
+El proyecto incluye los GRC S3, el análisis Python reproducible, los GRC SDR de imagen, las evidencias multimedia, un [blog local](Proyecto_Multitrayectoria/blog/index.html) y su [versión publicada en GitHub Pages](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/).
 
 ```text
 Labs/

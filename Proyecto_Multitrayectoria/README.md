@@ -63,7 +63,7 @@ Los GRC previos se conservan en `src/sdr_imagen/originales/`. Abra los flujogram
 
 ## Imágenes, videos y material del curso
 
-El blog carga sus recursos desde `blog/media/`. `images/` mantiene una segunda copia con la misma estructura y contenido: tres videos MP4 H.264/AAC, el logo transmitido, cuatro figuras S3 y la captura de terminal. Los videos se comprobaron localmente en Chrome; su publicación queda pendiente del despliegue de Pages.
+El blog carga sus recursos desde `blog/media/`. `images/` mantiene una segunda copia con la misma estructura y contenido: tres videos MP4 H.264/AAC, el logo transmitido, cuatro figuras S3 y la captura de terminal. Los tres videos se comprobaron en la versión publicada de Pages y se reprodujeron en Chrome.
 
 Los materiales de referencia del curso están en `docs/material_curso/`:
 
@@ -73,4 +73,4 @@ Los materiales de referencia del curso están en `docs/material_curso/`:
 
 ## Blog y GitHub Pages
 
-Abra el blog local desde [blog/index.html](blog/index.html). El workflow de publicación está en [deploy-pages.yml](../.github/workflows/deploy-pages.yml) y publica únicamente `blog/` y sus recursos. La nueva versión todavía no está publicada ni tiene una URL verificada.
+Abra el blog [localmente](blog/index.html) o en la [versión publicada de GitHub Pages](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/). El workflow de publicación está en [deploy-pages.yml](../.github/workflows/deploy-pages.yml), publica únicamente `blog/` y sus recursos, y se ejecuta con los cambios de la rama `integracion-proyecto-comunicaciones-ii`.
