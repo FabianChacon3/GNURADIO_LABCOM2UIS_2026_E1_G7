@@ -1,25 +1,32 @@
 # Laboratorios de Comunicaciones II
 
-Este repositorio contiene los códigos fuente, simulaciones computacionales y la documentación técnica de las prácticas de laboratorio desarrolladas para la asignatura de **Comunicaciones II** en la Universidad Industrial de Santander (UIS). 
+Este repositorio reúne códigos fuente, simulaciones y materiales de las prácticas de **Comunicaciones II** de la Universidad Industrial de Santander (UIS). Las actividades utilizan GNU Radio, Python y herramientas de procesamiento digital de señales.
 
-El objetivo de este repositorio es evidenciar la aplicación práctica de los principios de transmisión de información, procesamiento digital de señales (DSP) y análisis de sistemas de telecomunicaciones modernos mediante el uso de herramientas como GNU Radio y Python.
+## Temas del curso
 
-## Contenido Teórico de la Asignatura
+- **Modulación digital pasabanda:** constelaciones, PSK, QAM, probabilidad de error y ancho de banda.
+- **Canales de comunicaciones:** distorsión lineal, AWGN, multitrayectoria y respuesta en frecuencia.
+- **Multiplexación y acceso:** TDM, FDM, OFDM, MIMO, TDMA, FDMA y CDMA.
+- **Información y codificación:** codificación de fuente y de canal.
 
-Las prácticas aquí alojadas complementan los ejes temáticos del curso de Comunicaciones II, los cuales abarcan:
+## Laboratorios
 
-* **Módulo 1: Modulación Digital Pasabanda:** Análisis en el espacio de señal, diagramas de constelación, modulaciones binarias y M-arias (PSK, ASK), evaluación de probabilidad de error, ancho de banda y modulación continua de fase (CPM).
-* **Módulo 2: Estudio del Canal de Comunicaciones:** Efectos de la distorsión lineal, impacto del ruido aditivo blanco gaussiano (AWGN), limitaciones por ancho de banda, propagación multitrayectoria, canales selectivos (en tiempo y frecuencia) y cálculo de capacidad del canal.
-* **Módulo 3: Técnicas de Multiplexión y Multiacceso:** Implementación y análisis de técnicas de multiplexación (TDM, FDM, OFDM, MIMO) y técnicas de multiacceso (TDMA, FDMA, CDMA).
-* **Módulo 4: Teoría de Información y Codificación:** Modulación codificada (PCM, TCM, DM), codificación de fuente (códigos de línea) y codificación de canal, incluyendo códigos de bloques y convolucionales.
+- [Laboratorio 3: análisis de PSD](<Lab3 PSD/README.md>)
+- [Laboratorio 5: modulación M-QAM y M-PSK](<Lab5 M-QAM y M-PSK/README.md>)
+- [Laboratorio 6: transmisión y recepción de audio QPSK](<Lab6 QPSK TX-RX/README.md>)
+- [Proyecto integrador: canal S3, prácticas SDR e imágenes](Proyecto_Integrador/README.md)
 
-## Estructura del Repositorio
+La referencia `Lab4_...` del esquema inicial era un marcador de posición; no hay una carpeta Laboratorio 4 entre los materiales actuales.
 
-El proyecto está organizado en carpetas independientes para cada práctica de laboratorio. Cada carpeta contiene sus propios datos, diagramas de flujo y el informe técnico correspondiente.
+## Proyecto integrador
+
+El proyecto contiene los flujogramas S3 QPSK y BPSK, el análisis Python reproducible, los GRC de TX/RX de imagen, sus evidencias multimedia y un [blog local](Proyecto_Integrador/blog/index.html). La publicación de Pages de esta versión permanece pendiente; el alcance y las validaciones están descritos en el [README del proyecto](Proyecto_Integrador/README.md).
 
 ```text
-📦 comunicaciones-II-labs
-├── 📁 Lab3_PSD                 # Análisis de Densidad Espectral de Potencia (PSD)
-├── 📁 Lab4_...                 # [Nombre de la futura práctica]
-├── 📄 LICENSE                  # Licencia de uso (MIT)
-└── 📄 README.md                # Documentación principal (Este archivo)
+Labs/
+├── Lab3 PSD/
+├── Lab5 M-QAM y M-PSK/
+├── Lab6 QPSK TX-RX/
+├── Proyecto_Integrador/
+└── README.md
+```

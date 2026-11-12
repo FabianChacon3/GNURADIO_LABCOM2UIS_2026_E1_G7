@@ -1,78 +1,74 @@
 # Proyecto integrador de Comunicaciones II
 
-**Canal QPSK de dos trayectorias (S3), prácticas SDR y transmisión de imágenes**<br>
-Universidad Industrial de Santander · Grupo Tema 3<br>
+**Canal S3 con QPSK y BPSK, prácticas SDR y transmisión de imágenes**
+Universidad Industrial de Santander · Grupo Tema 3
 Integrantes: Fabián Chacón V., Javier Gómez S. y Juan Santos L.
 
-## Resumen
+## Resumen y alcance
 
-El proyecto organiza y documenta un flujograma GNU Radio de QPSK con un camino directo y un eco retardado un símbolo. También documenta, como actividad complementaria, los flujos SDR de transmisión y recepción de imagen en 16-QAM. Un script Python genera figuras y CSV reproducibles a partir del modelo S3; el [blog](blog/index.html) conserva el diseño didáctico y presenta los materiales con sus límites de evidencia.
+El proyecto estudia un canal discreto de dos trayectorias: camino directo y un eco retardado ocho muestras (un símbolo). QPSK es la implementación principal; BPSK ofrece una comparación complementaria bajo el mismo modelo de canal. El análisis Python genera cuatro figuras y sus CSV a partir de un modelo determinista.
 
-## Actividades y alcance
-
-- Se revisó el archivo GRC S3, sus tasas, mapeo, taps, cuatro condiciones de eco y visores. La copia de trabajo está en `src/s3/Enlace_S3_Multitrayectoria_Grupo3.grc`.
-- Se añadieron comentarios y documentación a las copias de los flujos TX/RX de imagen HackRF. Los flujos anteriores de trama de texto se guardan en `src/sdr_imagen/originales/`.
-- Se preparó `src/s3/analizar_s3.py` para generar la respuesta impulsional, la respuesta frecuencial, constelaciones y secuencias temporales del modelo.
-- Se inspeccionaron videos de clase de TX y RX. Los archivos se enlazan desde `organizar/` y no se duplican.
-
-La revisión GRC fue estática: en este entorno no están disponibles GNU Radio Companion, GNU Radio, PyQt5 ni HackRF. No se afirma una ejecución del GRC S3 ni una transmisión de imagen verificada. No se encontró el PNG reconstruido `rx_imagen.png` entre los materiales recibidos. El modelo de análisis no incluye AWGN, receptor ni BER; la propuesta de la Guía 4 se conserva sin implementar.
+Las prácticas de transmisión y recepción SDR e imágenes son actividades complementarias. Los GRC SDR se compilaron, pero no se ejecutó una transmisión por HackRF. Los videos son material suministrado de prácticas anteriores; no validan el caso S3. Tampoco hay evidencia disponible de un archivo de imagen reconstruido por el receptor.
 
 ## Caso S3
 
-El mapeo QPSK del GRC, con los dos bits en orden MSB primero, es `00→1`, `01→j`, `10→−1` y `11→−j`. Los parámetros principales son:
+| Parámetro | QPSK | BPSK |
+|---|---:|---:|
+| Símbolos `M` | 4 | 2 |
+| Bits por símbolo | 2 | 1 |
+| `Rs` | 32 ksym/s | 32 ksym/s |
+| `Rb` calculada | 64 kbit/s | 32 kbit/s |
+| Muestras por símbolo | 8 | 8 |
+| Frecuencia de muestreo | 256 kS/s | 256 kS/s |
+| Retardo del eco | 8 muestras = 1 símbolo | 8 muestras = 1 símbolo |
+| Amplitud AWGN declarada en el GRC | 0,05 | 0,05 |
+| Tap directo | `1+0j` | `1+0j` |
 
-| Parámetro | Valor |
-|---|---:|
-| `Rs` / `Rb` | 32 ksym/s / 64 kbit/s |
-| `SPS` / `fs` | 8 / 256 kS/s |
-| Retardo | 8 muestras = 1 símbolo = 31,25 µs |
-| Camino directo | 1 en el tap de índice 0 |
-| Ruido declarado en el GRC | 0,05 |
-| Interpolación | Pulso rectangular, `h=[1]*SPS` |
+Los dos flujogramas usan las mismas cuatro condiciones del tap retardado: referencia `0+0j`, suave `0,20+0,05j`, media `0,35+0,15j` y fuerte `0,50+0,20j`. En QPSK, la tabla cardinal es `00→1`, `01→j`, `10→−1`, `11→−j`.
 
-Los taps de eco son `0`, `0,20+0,05j`, `0,35+0,15j` y `0,50+0,20j` para referencia, suave, media y fuerte. En el GRC, la salida del canal alimenta los visores de constelación, tiempo y frecuencia. El visor de frecuencia muestra ganancia relativa; no es una PSD calibrada. El flujo no tiene receptor digital ni medidor BER.
+Los dos GRC S3 compilaron con GNU Radio 3.10.12 y se iniciaron brevemente en modo sin pantalla para revisar `M`, bits por símbolo, `Rb`, frecuencia de muestreo y las cuatro condiciones. Esto no equivale a una revisión visual manual de los controles y visores. El modelo de figuras Python no incorpora AWGN, receptor ni BER.
 
-## Prácticas SDR e imagen
+## Archivos principales
 
-Los flujos `src/sdr_imagen/LAB_TX_16QAM_HackRF_IMAGEN.grc` y `LAB_RX_16QAM_HackRF_IMAGEN.grc` describen una cadena distinta del caso S3. El TX lee `assets/Logouis.png`, la convierte a 160×80 RGB y la divide en paquetes con cabecera, preámbulo, blanqueo y CRC32. El RX sincroniza, prueba rotaciones de fase, valida CRC y declara reensamblar la imagen en `data/resultados/rx_imagen.png`.
+- QPSK principal: [Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc](src/s3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc)
+- BPSK complementario: [Enlace_S3_BPSK_Multitrayectoria_Grupo3.grc](src/s3/BPSK/Enlace_S3_BPSK_Multitrayectoria_Grupo3.grc)
+- GRC fuente preservado: [prueba(1).grc](src/s3/originales/prueba%281%29.grc). El archivo disponible como fuente tenía el nombre `prueba.grc`; la copia incluida conserva su contenido y usa el nombre solicitado.
+- Plantilla AWGN de referencia: [Modulaciones_basadas_en_constelaciones_AWGN.grc](src/s3/referencia/Modulaciones_basadas_en_constelaciones_AWGN.grc). Es una referencia general, no sustituye los flujogramas S3.
+- Script Python recibido junto al flujo original: [Enlace_S3_Multitrayectoria_Grupo3.py](scripts/originales_profesor/Enlace_S3_Multitrayectoria_Grupo3.py)
+- Análisis reproducible: [analizar_s3.py](scripts/analisis/analizar_s3.py)
+- Datos y figuras numéricas: `data/figuras_s3/`
 
-Los valores guardados en estos archivos incluyen 16-QAM, `Rs=8 ksym/s`, `Rb=32 kbit/s`, `SPS=8`, tasa base 64 kS/s, tasa de radio 2 MS/s y filtro RRC con β=0,5 y span 11. Son parámetros declarados por los GRC; no se infieren como valores de una sesión de video. Consulte [Prácticas SDR](docs/PRACTICAS_SDR.md) y [Parámetros](docs/PARAMETROS.md) para el detalle y alcance.
+## Reproducir las figuras
 
-## Organización
-
-```text
-Proyecto_Integrador/
-├── blog/index.html
-├── data/figuras/s3/             # PNG y CSV del modelo analítico
-├── docs/                        # Guías, parámetros, referencias y bitácora
-└── src/
-    ├── s3/                      # GRC S3, referencias y script Python
-    └── sdr_imagen/              # GRC TX/RX, logo, resultados y originales
-```
-
-Los archivos de origen recibidos permanecen en `../organizar/`. El inventario está en [`../INVENTARIO_MATERIALES.md`](../INVENTARIO_MATERIALES.md), y la correspondencia y diagnóstico iniciales en [`../INFORME_AUDITORIA_INICIAL.md`](../INFORME_AUDITORIA_INICIAL.md).
-
-## Ejecución
-
-Desde la carpeta `Proyecto_Integrador/`, genere las figuras analíticas con:
+Desde la raíz de `Proyecto_Integrador/`, ejecute:
 
 ```bash
-python src/s3/analizar_s3.py
+python scripts/analisis/analizar_s3.py
 ```
 
-El script requiere NumPy y Matplotlib y escribe cuatro archivos PNG y cuatro CSV en `data/figuras/s3/`. Cada salida describe el modelo determinista sin AWGN; no contiene mediciones de GNU Radio, PSD ni BER. Consulte [Documentación del script y las figuras](docs/FIGURAS_S3.md).
+Se requieren NumPy y Matplotlib. El script escribe cuatro PNG y cuatro CSV en `data/figuras_s3/`. Usa taps definidos, una secuencia determinista y prehistoria cero; las salidas son resultados analíticos del modelo, no mediciones de GNU Radio.
 
-Para inspeccionar los flujos, abra los archivos `.grc` desde GNU Radio Companion. El caso S3 es una simulación de banda base. Los flujos SDR TX y RX se abren por separado y requieren los bloques y el hardware disponibles en el laboratorio. Las rutas y pasos están en la [Guía de GNU Radio](docs/GUIA_GNU_RADIO.md).
+## Prácticas SDR e imágenes
 
-## Documentación
+Los flujogramas independientes de TX y RX para imagen son:
 
-- [Guía de GNU Radio Companion](docs/GUIA_GNU_RADIO.md)
-- [Parámetros documentados](docs/PARAMETROS.md)
-- [Prácticas SDR e imagen](docs/PRACTICAS_SDR.md)
-- [Script y figuras S3](docs/FIGURAS_S3.md)
-- [Alcance de Guía 4 y BER](docs/VALIDACION_GUIA4.md)
-- [Referencias y trazabilidad](docs/REFERENCIAS.md)
-- [Bitácora de modificaciones](docs/BITACORA.md)
-- [Blog de divulgación](blog/index.html)
+- [LAB_TX_16QAM_HackRF_IMAGEN.grc](src/sdr_imagen/LAB_TX_16QAM_HackRF_IMAGEN.grc)
+- [LAB_RX_16QAM_HackRF_IMAGEN.grc](src/sdr_imagen/LAB_RX_16QAM_HackRF_IMAGEN.grc)
 
-La inspección estática de YAML y la ejecución del script analítico se realizaron en este entorno. La generación y ejecución de flujogramas GNU Radio, la prueba TX/RX con HackRF y la reconstrucción de una imagen requieren validación manual con el entorno de laboratorio. No se implementó la instrumentación BER de la Guía 4 ni se publicó el sitio.
+Ambos compilaron con GNU Radio 3.10.12. El transmisor carga `images/imagenes_sdr/Logouis.png`, la redimensiona a 160×80 RGB y organiza los datos en paquetes. El receptor valida tramas y declara guardar el resultado en `data/resultados/rx_imagen.png` cuando se ejecuta desde `src/sdr_imagen/`. No se hizo una transmisión con hardware ni se dispone de ese PNG de salida.
+
+Los GRC anteriores se conservan en `src/sdr_imagen/originales/`. Para abrir los flujogramas SDR desde GNU Radio Companion, sitúese primero en `src/sdr_imagen/` para que las rutas relativas de la imagen y los resultados correspondan a esa carpeta. El flujo S3 es de banda base y puede abrirse desde la raíz del proyecto.
+
+## Imágenes, videos y evidencias
+
+El blog carga todos sus recursos desde `blog/media/`. La carpeta `images/` mantiene una segunda copia con la misma estructura y contenido. Se incluyen tres videos (`transmisor.mp4`, `receptoryvalidacionpalabra.mp4`, `Receptorimagen.mp4`), el logo transmitido, cuatro figuras S3 y `capturas/Imagenrecibida.jpeg`. Esta última es una captura de salida de terminal; no es la imagen reconstruida por el RX.
+
+Los materiales de referencia del curso están en `docs/material_curso/`:
+
+- [Guía Estudiante del Proyecto Integrador](docs/material_curso/Guia_Estudiante_Proyecto_Integrador_Comunicaciones_II_2026.pdf)
+- [Guía 4: validación final, ajuste y comparación experimental](docs/material_curso/Guia_4_Fase_4_Validacion_final_ajuste_y_comparacion_experimental.pdf)
+- [Decisión Técnica Ciega](docs/material_curso/Decision_Tecnica_Ciega_Comunicaciones_II_2026.pdf)
+
+## Blog y publicación
+
+Abra el blog local desde [blog/index.html](blog/index.html). El workflow de Pages está preparado en el repositorio, pero la fuente de GitHub Pages continúa en modo legacy y el workflow aún no se ha publicado. No hay una URL pública verificada para esta versión.
