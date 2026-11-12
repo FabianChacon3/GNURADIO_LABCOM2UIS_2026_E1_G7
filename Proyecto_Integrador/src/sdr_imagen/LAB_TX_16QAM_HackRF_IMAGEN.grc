@@ -1025,7 +1025,7 @@ blocks:
       \        for i, c in enumerate(colores):\n            d.rectangle([i * bw, 0, (i + 1) * bw - 1, h // 2], fill=c)\n \
       \       d.rectangle([2, h // 2 + 4, w - 3, h - 3], outline=(0, 0, 0))\n        d.text((8, h // 2 + 10), 'PRUEBA 16-QAM',\
       \ fill=(0, 0, 0))\n        im = im.convert(mode)\n    return im\n\n\nclass blk(gr.sync_block):\n    \"\"\"Transmite\
-      \ ciclicamente una imagen como tramas de indices 16-QAM (0..15).\"\"\"\n\n    def __init__(self, image_path='uis_logo.png',\
+      \ ciclicamente una imagen como tramas de indices 16-QAM (0..15).\"\"\"\n\n    def __init__(self, image_path='../../images/imagenes_sdr/Logouis.png',\
       \ width=160, height=80,\n                 channels=3, payload_len=128):\n        gr.sync_block.__init__(self, name='TX\
       \ imagen: tramas + CRC32',\n                               in_sig=None, out_sig=[np.uint8])\n        self.image_path\
       \ = image_path\n        self.width = int(width)\n        self.height = int(height)\n        self.channels = 3 if int(channels)\
@@ -1207,8 +1207,8 @@ blocks:
 - name: image_path
   id: variable
   parameters:
-    comment: Ruta absoluta construida desde el directorio del flujo; usa el logo suministrado.
-    value: os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "Logouis.png")
+    comment: Ruta del logo en ../../images/imagenes_sdr desde esta carpeta.
+    value: os.path.abspath(os.path.join("..", "..", "images", "imagenes_sdr", "Logouis.png"))
   states:
     bus_sink: false
     bus_source: false

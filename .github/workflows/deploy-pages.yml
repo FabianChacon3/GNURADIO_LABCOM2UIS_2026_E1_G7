@@ -1,0 +1,53 @@
+name: Deploy project blog to GitHub Pages
+
+on:
+  push:
+    branches:
+      - integracion-proyecto-comunicaciones-ii
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare website
+        run: |
+          set -euo pipefail
+
+          test -f Proyecto_Integrador/blog/index.html
+          test -d Proyecto_Integrador/blog/media
+
+          mkdir -p _site
+          cp -a Proyecto_Integrador/blog/. _site/
+
+          test -f _site/index.html
+          test -d _site/media
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

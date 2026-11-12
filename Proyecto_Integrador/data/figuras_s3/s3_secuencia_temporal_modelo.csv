@@ -1,8 +1,8 @@
 indice_simbolo,tx_i,tx_q,condicion,rx_i,rx_q,tap_eco_real,tap_eco_imag,origen
 0,0.0,-1.0,Referencia,0.0,-1.0,0.0,0.0,modelo_analitico_sin_ruido
-0,0.0,-1.0,Suave,0.2,-0.95,0.2,0.05,modelo_analitico_sin_ruido
-0,0.0,-1.0,Media,0.35,-0.85,0.35,0.15,modelo_analitico_sin_ruido
-0,0.0,-1.0,Fuerte,0.5,-0.8,0.5,0.2,modelo_analitico_sin_ruido
+0,0.0,-1.0,Suave,0.0,-1.0,0.2,0.05,modelo_analitico_sin_ruido
+0,0.0,-1.0,Media,0.0,-1.0,0.35,0.15,modelo_analitico_sin_ruido
+0,0.0,-1.0,Fuerte,0.0,-1.0,0.5,0.2,modelo_analitico_sin_ruido
 1,0.0,-1.0,Referencia,0.0,-1.0,0.0,0.0,modelo_analitico_sin_ruido
 1,0.0,-1.0,Suave,0.05,-1.2,0.2,0.05,modelo_analitico_sin_ruido
 1,0.0,-1.0,Media,0.15,-1.35,0.35,0.15,modelo_analitico_sin_ruido

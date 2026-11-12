@@ -1418,7 +1418,7 @@ blocks:
       \ a partir de tramas 16-QAM con CRC32.\n\n    Entrada 0 = indices de simbolo (puerto 0 del constellation_receiver_cb).\n\
       \    Entrada 1 = muestras sincronizadas (puerto 4 del constellation_receiver_cb).\n    Salidas (float): % de imagen\
       \ completa, % de tramas con CRC OK, EVM medio (%).\n    La imagen se guarda en out_path (PNG) cada save_every paquetes\
-      \ nuevos y al completarse.\n    \"\"\"\n\n    def __init__(self, out_path='rx_imagen.png', payload_len=128, save_every=10):\n\
+      \ nuevos y al completarse.\n    \"\"\"\n\n    def __init__(self, out_path='data/resultados/rx_imagen.png', payload_len=128, save_every=10):\n\
       \        gr.sync_block.__init__(self, name='RX imagen: CRC32 + reensamblado',\n                               in_sig=[np.uint8,\
       \ np.complex64],\n                               out_sig=[np.float32, np.float32, np.float32])\n        self.out_path\
       \ = out_path\n        self.payload_len = int(payload_len)\n        self.save_every = max(1, int(save_every))\n     \
@@ -1737,7 +1737,7 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     type: complex
-    file: os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "resultados", "RX_IQ_64ksps.c64")
+    file: os.path.abspath(os.path.join("data", "resultados", "RX_IQ_64ksps.c64"))
     vlen: '1'
     unbuffered: 'False'
     append: 'False'
@@ -1759,7 +1759,7 @@ blocks:
     maxoutbuf: '0'
     minoutbuf: '0'
     type: byte
-    file: os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "resultados", "RX_simbolos_decididos.u8")
+    file: os.path.abspath(os.path.join("data", "resultados", "RX_simbolos_decididos.u8"))
     vlen: '1'
     unbuffered: 'False'
     append: 'False'
@@ -1775,8 +1775,8 @@ blocks:
 - name: out_path
   id: variable
   parameters:
-    comment: Imagen PNG reconstruida dentro de data/resultados del proyecto.
-    value: os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "resultados", "rx_imagen.png")
+    comment: PNG reconstruido dentro de data/resultados al abrir el flujo desde esta carpeta.
+    value: os.path.abspath(os.path.join("data", "resultados", "rx_imagen.png"))
   states:
     bus_sink: false
     bus_source: false

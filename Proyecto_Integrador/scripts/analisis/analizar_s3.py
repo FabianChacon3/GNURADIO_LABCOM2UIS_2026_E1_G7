@@ -18,7 +18,7 @@ import numpy as np
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_DIR = PROJECT_ROOT / "data" / "figuras" / "s3"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "figuras_s3"
 
 RS = 32_000
 SPS = 8
@@ -45,9 +45,8 @@ def channel_taps(echo: complex) -> np.ndarray:
 
 
 def frequency_response(echo: complex, frequencies_hz: np.ndarray) -> np.ndarray:
-    return 1.0 + echo * np.exp(
-        -2j * np.pi * frequencies_hz * DELAY_SAMPLES / FS
-    )
+    delay_seconds = DELAY_SAMPLES / FS
+    return 1.0 + echo * np.exp(-2j * np.pi * frequencies_hz * delay_seconds)
 
 
 def qpsk_indices_to_symbols(indices: np.ndarray) -> np.ndarray:
@@ -76,6 +75,7 @@ def write_frequency_data(frequencies_hz: np.ndarray) -> None:
                 "frecuencia_hz",
                 "magnitud_H",
                 "ganancia_dB",
+                "fase_grados",
                 "tap_eco_real",
                 "tap_eco_imag",
                 "origen",
@@ -84,13 +84,17 @@ def write_frequency_data(frequencies_hz: np.ndarray) -> None:
         for name, echo in TESTS:
             response = frequency_response(echo, frequencies_hz)
             gain_db = 20.0 * np.log10(np.maximum(np.abs(response), 1e-12))
-            for freq, mag, db in zip(frequencies_hz, np.abs(response), gain_db):
+            phase_deg = np.angle(response, deg=True)
+            for freq, mag, db, phase in zip(
+                frequencies_hz, np.abs(response), gain_db, phase_deg
+            ):
                 writer.writerow(
                     [
                         name,
                         freq,
                         mag,
                         db,
+                        phase,
                         echo.real,
                         echo.imag,
                         "modelo_analitico",
@@ -100,6 +104,13 @@ def write_frequency_data(frequencies_hz: np.ndarray) -> None:
 
 def symbol_received(current: complex, previous: complex, echo: complex) -> complex:
     return current + echo * previous
+
+
+def previous_symbols(symbols: np.ndarray) -> np.ndarray:
+    """Use a zero prehistory for a finite sequence: x[-1] = 0."""
+    previous = np.zeros_like(symbols)
+    previous[1:] = symbols[:-1]
+    return previous
 
 
 def write_constellation_data() -> None:
@@ -141,7 +152,7 @@ def write_constellation_data() -> None:
 
 
 def write_time_data(symbols: np.ndarray) -> None:
-    previous = np.roll(symbols, 1)
+    previous = previous_symbols(symbols)
     path = OUTPUT_DIR / "s3_secuencia_temporal_modelo.csv"
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -177,47 +188,67 @@ def write_time_data(symbols: np.ndarray) -> None:
 
 
 def plot_impulse_response() -> None:
-    fig, axes = plt.subplots(2, 1, figsize=(9.0, 6.6), sharex=True)
+    fig, axes = plt.subplots(
+        1, 3, figsize=(15.0, 5.3), gridspec_kw={"width_ratios": [1, 1, 1.25]}
+    )
     n = np.arange(DELAY_SAMPLES + 1)
 
     axes[0].stem(
-        [0],
-        [1],
-        linefmt="#263746",
-        markerfmt="o",
-        basefmt=" ",
-        label="Camino directo: h[0]=1",
+        [0], [1], linefmt="#263746", markerfmt="o", basefmt=" ",
+        label="Camino directo h[0]=1",
+    )
+    axes[1].stem(
+        [0], [0], linefmt="#263746", markerfmt="o", basefmt=" ",
+        label="Camino directo Im{h[0]}=0",
     )
     for (name, echo), color in zip(TESTS, COLORS):
         axes[0].stem(
-            [DELAY_SAMPLES],
-            [echo.real],
-            linefmt=color,
-            markerfmt="o",
-            basefmt=" ",
-            label=f"{name}: {echo.real:.2f}",
+            [DELAY_SAMPLES], [echo.real], linefmt=color, markerfmt="o",
+            basefmt=" ", label=f"{name}: {echo.real:.2f}",
         )
         axes[1].stem(
-            [DELAY_SAMPLES],
-            [echo.imag],
-            linefmt=color,
-            markerfmt="o",
-            basefmt=" ",
-            label=f"{name}: {echo.imag:.2f}",
+            [DELAY_SAMPLES], [echo.imag], linefmt=color, markerfmt="s",
+            basefmt=" ", label=f"{name}: {echo.imag:.2f}",
         )
-    for ax in axes:
+
+        axes[2].annotate(
+            "", xy=(echo.real, echo.imag), xytext=(0, 0),
+            arrowprops={"arrowstyle": "->", "color": color, "lw": 1.8},
+        )
+        magnitude = abs(echo)
+        phase_label = f"∠c={np.degrees(np.angle(echo)):.1f}°" if magnitude else "fase no definida"
+        axes[2].scatter(
+            echo.real,
+            echo.imag,
+            color=color,
+            s=38,
+            zorder=3,
+            label=f"{name}: |c|={magnitude:.3f}, {phase_label}",
+        )
+
+    for ax in axes[:2]:
         ax.set_xlim(-0.8, 9.0)
         ax.set_xticks(n)
+        ax.set_xlabel("Índice de muestra n")
         ax.grid(True, alpha=0.25)
-        ax.legend(loc="upper right", ncols=2, fontsize=8)
-    axes[0].set_ylabel("Parte real de h[n]")
-    axes[1].set_ylabel("Parte imaginaria de h[n]")
-    axes[1].set_xlabel("Índice de muestra n")
+        ax.legend(loc="upper right", fontsize=7)
+    axes[0].set_ylabel("Re{h[n]}")
+    axes[1].set_ylabel("Im{h[n]}")
+    axes[2].set_xlim(-0.12, 0.72)
+    axes[2].set_ylim(-0.10, 0.34)
+    axes[2].set_aspect("equal", adjustable="box")
+    axes[2].set_xlabel("Re{c}")
+    axes[2].set_ylabel("Im{c}")
+    axes[2].set_title("Un único tap complejo c en n=8")
+    axes[2].grid(True, alpha=0.25)
+    axes[2].axhline(0, color="#788794", linewidth=0.7)
+    axes[2].axvline(0, color="#788794", linewidth=0.7)
+    axes[2].legend(title="Tap del eco", loc="upper left", fontsize=7)
     fig.suptitle(
-        "Respuesta impulsional del canal S3\n"
-        f"{MODEL_LABEL}; eco en n={DELAY_SAMPLES} (un símbolo)"
+        "Respuesta impulsional: h[n] = δ[n] + c·δ[n−8]\n"
+        f"{MODEL_LABEL}; Re(c) e Im(c) son componentes del mismo eco"
     )
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0, 1, 0.91))
     fig.savefig(OUTPUT_DIR / "s3_respuesta_impulsional_modelo.png", dpi=220)
     plt.close(fig)
 
@@ -227,22 +258,28 @@ def plot_frequency_response(frequencies_hz: np.ndarray) -> None:
     for (name, echo), color in zip(TESTS, COLORS):
         response = frequency_response(echo, frequencies_hz)
         mag = np.abs(response)
-        axes[0].plot(frequencies_hz / 1000.0, mag, color=color, label=name)
-        axes[1].plot(
+        axes[0].plot(
             frequencies_hz / 1000.0,
             20.0 * np.log10(np.maximum(mag, 1e-12)),
             color=color,
             label=name,
         )
-    axes[0].set_ylabel("|H(f)|")
-    axes[1].set_ylabel("20 log10 |H(f)| [dB]")
+        axes[1].plot(
+            frequencies_hz / 1000.0,
+            np.angle(response, deg=True),
+            color=color,
+            label=name,
+        )
+    axes[0].set_ylabel("20 log₁₀ |H(f)| [dB]")
+    axes[1].set_ylabel("∠H(f) [grados]")
     axes[1].set_xlabel("Frecuencia f [kHz]")
+    axes[1].set_ylim(-180, 180)
     for ax in axes:
         ax.grid(True, alpha=0.25)
         ax.legend(title="Tap del eco")
     fig.suptitle(
         "Respuesta frecuencial del canal S3\n"
-        f"{MODEL_LABEL}; no es una PSD"
+        f"H(f)=1+c·exp(−j2πfτ), τ=1/Rs; respuesta del canal, no PSD"
     )
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "s3_respuesta_frecuencial_modelo.png", dpi=220)
@@ -298,7 +335,7 @@ def plot_constellations() -> None:
 
 
 def plot_time_sequence(symbols: np.ndarray) -> None:
-    previous = np.roll(symbols, 1)
+    previous = previous_symbols(symbols)
     k = np.arange(len(symbols))
     fig, axes = plt.subplots(4, 1, figsize=(11.0, 9.5), sharex=True)
     for ax, (name, echo), color in zip(axes, TESTS, COLORS):
@@ -321,7 +358,7 @@ def plot_time_sequence(symbols: np.ndarray) -> None:
     axes[0].legend(loc="upper right", ncols=4, fontsize=8)
     fig.suptitle(
         "Secuencia QPSK Tx y salida analítica del canal\n"
-        f"{MODEL_LABEL}; símbolos aleatorios con semilla fija"
+        f"{MODEL_LABEL}; secuencia determinista con semilla fija y x[−1]=0"
     )
     fig.tight_layout()
     fig.savefig(OUTPUT_DIR / "s3_secuencia_temporal_modelo.png", dpi=220)

@@ -209,7 +209,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    comment: Fuente de bits aleatorios 0/1 para la simulacion QPSK.
+    comment: ''
     max: '2'
     maxoutbuf: '0'
     min: '0'
@@ -229,7 +229,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    comment: Empaqueta bits de entrada antes de formar los grupos de dos bits.
+    comment: ''
     k: '8'
     maxoutbuf: '0'
     minoutbuf: '0'
@@ -246,7 +246,7 @@ blocks:
     affinity: ''
     alias: ''
     bits_per_chunk: bps
-    comment: Entrega grupos de dos bits en orden MSB-first para seleccionar simbolos QPSK.
+    comment: ''
     endianness: gr.GR_MSB_FIRST
     maxoutbuf: '0'
     minoutbuf: '0'
@@ -285,7 +285,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    comment: Mapea cada grupo de dos bits segun la tabla QPSK cardinal del GRC.
+    comment: ''
     dimension: '1'
     in_type: byte
     maxoutbuf: '0'
@@ -318,7 +318,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    comment: Interpola por SPS con pulsos rectangulares dados por h=[1]*SPS.
+    comment: ''
     interp: Sps
     maxoutbuf: '0'
     minoutbuf: '0'
@@ -359,7 +359,7 @@ blocks:
     color7: '"yellow"'
     color8: '"dark red"'
     color9: '"dark green"'
-    comment: Observa las muestras complejas despues del canal; no son decisiones de simbolo.
+    comment: ''
     grid: 'True'
     gui_hint: 3,0,1,1
     label1: '"Senal con multitrayectoria"'
@@ -453,7 +453,7 @@ blocks:
     color7: '"yellow"'
     color8: '"dark red"'
     color9: '"dark green"'
-    comment: Espectro relativo en dB de la salida del canal; no es PSD calibrada.
+    comment: ''
     ctrlpanel: 'False'
     fc: '0'
     fftsize: '1024'
@@ -474,7 +474,7 @@ blocks:
     legend: 'True'
     maxoutbuf: '0'
     minoutbuf: '0'
-    name: "Espectro relativo Rx (S3)"
+    name: '"PSD Rx (S3)"'
     nconnections: '1'
     norm_window: 'False'
     showports: 'False'
@@ -532,7 +532,7 @@ blocks:
     color7: yellow
     color8: dark red
     color9: dark green
-    comment: Observa las componentes I y Q de la salida del canal en el tiempo.
+    comment: ''
     ctrlpanel: 'False'
     entags: 'True'
     grid: 'True'
@@ -607,7 +607,7 @@ blocks:
   parameters:
     affinity: ''
     alias: ''
-    comment: Limita el flujo simulado a la tasa de muestreo configurada.
+    comment: ''
     ignoretag: 'True'
     limit: auto
     maximum: '0.1'
