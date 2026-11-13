@@ -1,6 +1,6 @@
 # Comunicación interior con multitrayectoria: QPSK y BPSK
 
-[Blog público del proyecto](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/)
+[Blog público del proyecto](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/?v=5733885)
 
 **Integrantes:** Fabián Chacón V., Javier Gómez S. y Juan Santos L.
 **Curso:** Comunicaciones II · UIS
@@ -135,7 +135,7 @@ visualizaciones analíticas; no reemplazan la captura real de una interfaz GRC.
 - [Bitácora](docs/bitacora.md)
 - [Fuentes y enlaces](referencias/fuentes_y_enlaces.md)
 - [Selector interactivo S3](docs/selector_casos_s3.html)
-- [Blog público](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/)
+- [Blog público](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/?v=5733885)
 
 Los videos suministrados están en
 [multimedia/videos](multimedia/videos). La socialización de
