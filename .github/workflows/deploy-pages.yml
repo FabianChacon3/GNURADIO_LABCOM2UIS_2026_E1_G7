@@ -3,7 +3,7 @@ name: Deploy project blog to GitHub Pages
 on:
   push:
     branches:
-      - integracion-proyecto-comunicaciones-ii
+      - main
   workflow_dispatch:
 
 permissions:
