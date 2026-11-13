@@ -18,7 +18,8 @@ import numpy as np
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_DIR = PROJECT_ROOT / "data" / "figuras_s3"
+DATA_DIR = PROJECT_ROOT / "data" / "tablas_de_pruebas"
+FIGURE_DIR = PROJECT_ROOT / "figures" / "diagramas_tecnicos"
 
 RS = 32_000
 SPS = 8
@@ -54,7 +55,7 @@ def qpsk_indices_to_symbols(indices: np.ndarray) -> np.ndarray:
 
 
 def write_impulse_data() -> None:
-    path = OUTPUT_DIR / "s3_respuesta_impulsional_modelo.csv"
+    path = DATA_DIR / "s3_respuesta_impulsional_modelo.csv"
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -66,7 +67,7 @@ def write_impulse_data() -> None:
 
 
 def write_frequency_data(frequencies_hz: np.ndarray) -> None:
-    path = OUTPUT_DIR / "s3_respuesta_frecuencial_modelo.csv"
+    path = DATA_DIR / "s3_respuesta_frecuencial_modelo.csv"
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -114,7 +115,7 @@ def previous_symbols(symbols: np.ndarray) -> np.ndarray:
 
 
 def write_constellation_data() -> None:
-    path = OUTPUT_DIR / "s3_constelaciones_modelo.csv"
+    path = DATA_DIR / "s3_constelaciones_modelo.csv"
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -153,7 +154,7 @@ def write_constellation_data() -> None:
 
 def write_time_data(symbols: np.ndarray) -> None:
     previous = previous_symbols(symbols)
-    path = OUTPUT_DIR / "s3_secuencia_temporal_modelo.csv"
+    path = DATA_DIR / "s3_secuencia_temporal_modelo.csv"
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -249,7 +250,7 @@ def plot_impulse_response() -> None:
         f"{MODEL_LABEL}; Re(c) e Im(c) son componentes del mismo eco"
     )
     fig.tight_layout(rect=(0, 0, 1, 0.91))
-    fig.savefig(OUTPUT_DIR / "s3_respuesta_impulsional_modelo.png", dpi=220)
+    fig.savefig(FIGURE_DIR / "s3_respuesta_impulsional_modelo.png", dpi=220)
     plt.close(fig)
 
 
@@ -291,7 +292,7 @@ def plot_frequency_response(frequencies_hz: np.ndarray) -> None:
         f"un período fs/D=Rs={RS / 1000:g} kHz; no es una PSD"
     )
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "s3_respuesta_frecuencial_modelo.png", dpi=220)
+    fig.savefig(FIGURE_DIR / "s3_respuesta_frecuencial_modelo.png", dpi=220)
     plt.close(fig)
 
 
@@ -339,7 +340,7 @@ def plot_constellations() -> None:
         f"{MODEL_LABEL}; canal y[k]=x[k]+c·x[k−1]"
     )
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "s3_constelaciones_modelo.png", dpi=220)
+    fig.savefig(FIGURE_DIR / "s3_constelaciones_modelo.png", dpi=220)
     plt.close(fig)
 
 
@@ -370,12 +371,13 @@ def plot_time_sequence(symbols: np.ndarray) -> None:
         f"{MODEL_LABEL}; secuencia determinista con semilla fija y x[−1]=0"
     )
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "s3_secuencia_temporal_modelo.png", dpi=220)
+    fig.savefig(FIGURE_DIR / "s3_secuencia_temporal_modelo.png", dpi=220)
     plt.close(fig)
 
 
 def main() -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     frequencies_hz = np.linspace(-RS / 2.0, RS / 2.0, 801)
     rng = np.random.default_rng(20261112)
     indices = rng.integers(0, len(QPSK), size=32)
@@ -390,7 +392,8 @@ def main() -> None:
     plot_constellations()
     plot_time_sequence(symbols)
 
-    print(f"Analytical figures and CSV data written to: {OUTPUT_DIR}")
+    print(f"CSV data written to: {DATA_DIR}")
+    print(f"Figures written to: {FIGURE_DIR}")
     print(f"Parameters: Rs={RS} sym/s, SPS={SPS}, fs={FS} samples/s, delay={DELAY_SAMPLES} samples")
     print("Source: deterministic two-tap model; no BER or PSD data are generated.")
 

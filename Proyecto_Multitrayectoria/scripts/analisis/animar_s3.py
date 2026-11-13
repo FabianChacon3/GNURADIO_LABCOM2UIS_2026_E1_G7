@@ -21,7 +21,7 @@ from analizar_s3 import QPSK, TESTS, MODEL_LABEL, previous_symbols
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-OUTPUT_DIR = PROJECT_ROOT / "images" / "figuras_s3"
+OUTPUT_DIR = PROJECT_ROOT / "figures" / "diagramas_tecnicos"
 BLOG_MEDIA_DIR = PROJECT_ROOT / "blog" / "media"
 SEED = 20261112
 SYMBOL_COUNT = 32
@@ -212,7 +212,7 @@ def build_figure(symbols: np.ndarray, noise_std: float = 0.0):
 
 
 def write_summary_table() -> Path:
-    path = PROJECT_ROOT / "data" / "figuras_s3" / "s3_tabla_resumen.csv"
+    path = PROJECT_ROOT / "data" / "tablas_de_pruebas" / "s3_tabla_resumen.csv"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)

@@ -1,136 +1,122 @@
-# Proyecto de Multitrayectoria y SDR
+# Comunicación interior con multitrayectoria: QPSK y BPSK
 
-Proyecto final de Comunicaciones II: canal S3 con QPSK/BPSK, validación de
-transmisión y recepción 16-QAM con HackRF, e instrumentación BER vs. Eb/N0.
+[Blog público del proyecto](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/)
 
-## Alcance y estado
+**Integrantes:** Fabián Chacón V., Javier Gómez S. y Juan Santos L.
+**Curso:** Comunicaciones II · UIS
+**Última actualización:** 12 de noviembre de 2026
 
-El proyecto conserva el sistema funcional y separa tres tipos de resultado:
+## Resumen
 
-- **S3:** modelo de dos trayectorias con camino directo y eco en ocho muestras.
-- **TX/RX de imagen:** flujogramas 16-QAM y bloques de framing/deframing.
-- **Fase 4 BER:** instrumentación para medir BER vs. Eb/N0 sin reemplazar TX/RX.
+Este proyecto estudia un sensor digital que transmite dentro de una bodega o
+laboratorio con paredes, estanterías y superficies metálicas. La señal llega
+por un camino directo y por una réplica reflejada que se retrasa ocho muestras.
+Se implementan QPSK como modulación principal y BPSK como comparación bajo el
+mismo canal S3. Se mantienen `Rs=32 ksym/s`, `SPS=8`, `fs=256 kS/s` y cuatro
+condiciones controladas del tap complejo. Las pruebas reproducibles generan
+constelaciones, respuesta temporal, respuesta impulsional, respuesta
+frecuencial y tablas. Las figuras analíticas se distinguen de las capturas
+obtenidas desde GNU Radio.
 
-La validación previa de TX/RX de imagen se conserva. La instrumentación BER queda
-preparada, pero una curva experimental solo es válida cuando `curva_BER.csv`
-ha sido generada por el sistema y acompañada por sus parámetros y evidencias.
+## Decisión técnica y parámetros
 
-## Estructura funcional
-
-```text
-Proyecto_Multitrayectoria/
-├── blog/                         # Sitio local y recursos publicados
-├── data/
-│   └── figuras_s3/               # CSV y figuras analíticas reproducibles
-├── docs/
-│   ├── material_curso/           # Guías y documentos de referencia
-│   └── selector_casos_s3.html
-├── images/
-│   ├── evidencias_grc/S3/
-│   │   ├── QPSK/                 # Capturas organizadas por condición
-│   │   └── BPSK/
-│   ├── figuras_s3/               # Figuras analíticas y animaciones
-│   ├── imagenes_sdr/             # Imagen transmitida
-│   ├── capturas/                 # Capturas de terminal
-│   └── videos/                   # Material audiovisual suministrado
-├── scripts/analisis/             # Generación de resultados S3
-├── src/
-│   ├── ber/                      # Instrumentación de la Guía 4
-│   ├── s3/                       # GRC QPSK, BPSK y originales
-│   └── sdr_imagen/               # GRC TX/RX 16-QAM
-└── tests/                        # Pruebas reproducibles
-```
-
-No se conserva `QPSK/prueba.grc`: la copia funcional es
-`src/s3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc`.
-
-## S3: QPSK y BPSK
+QPSK se selecciona como modulación principal porque transmite dos bits por
+símbolo manteniendo una constelación compacta y permite observar claramente la
+distorsión producida por el eco. BPSK se conserva como comparación de menor
+orden y un bit por símbolo.
 
 | Parámetro | QPSK | BPSK |
 |---|---:|---:|
-| Orden M | 4 | 2 |
+| Orden `M` | 4 | 2 |
 | Bits por símbolo | 2 | 1 |
-| Rs | 32 ksym/s | 32 ksym/s |
-| Rb | 64 kbit/s | 32 kbit/s |
-| SPS | 8 | 8 |
-| fs | 256 kS/s | 256 kS/s |
+| `Rs` | 32 ksym/s | 32 ksym/s |
+| `Rb = Rs log2(M)` | 64 kbit/s | 32 kbit/s |
+| `SPS` | 8 | 8 |
+| `fs = Rs SPS` | 256 kS/s | 256 kS/s |
 | Retardo | 8 muestras = 1 símbolo | 8 muestras = 1 símbolo |
 | Ruido declarado | 0,05 | 0,05 |
-| Tap directo | `1+0j` | `1+0j` |
 
-Condiciones del tap retardado:
-
-| Condición | `eco_real` | `eco_imag` | Tap `c` |
-|---|---:|---:|---:|
-| Referencia | 0,00 | 0,00 | `0+0j` |
-| Suave | 0,20 | 0,05 | `0,20+0,05j` |
-| Media | 0,35 | 0,15 | `0,35+0,15j` |
-| Fuerte | 0,50 | 0,20 | `0,50+0,20j` |
-
-El canal es `h[n]=delta[n]+c delta[n-8]`. En QPSK, el mapeo cardinal es
-`00 -> 1`, `01 -> j`, `10 -> -1`, `11 -> -j`. La constelación del GRC se
-observa a la salida del canal y no representa símbolos recuperados.
-
-GRC:
-
-- [QPSK](src/s3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc)
-- [BPSK](src/s3/BPSK/Enlace_S3_BPSK_Multitrayectoria_Grupo3.grc)
-
-Las capturas disponibles están en
-[images/evidencias_grc/S3](images/evidencias_grc/S3). Las figuras analíticas
-están en [data/figuras_s3](data/figuras_s3) y
-[images/figuras_s3](images/figuras_s3); no deben confundirse con mediciones RF.
-
-## TX/RX 16-QAM de imagen
-
-- [Transmisor](src/sdr_imagen/LAB_TX_16QAM_HackRF_IMAGEN.grc)
-- [Receptor](src/sdr_imagen/LAB_RX_16QAM_HackRF_IMAGEN.grc)
-- [Originales](src/sdr_imagen/originales)
-
-La validación previa cubre carga de imagen, framing, cabecera, blanqueo, CRC32,
-tabla 16-QAM, cuatro rotaciones de fase y reconstrucción de imagen en la prueba
-de software. La transmisión física requiere conservar las condiciones de
-operación autorizadas, conexión conducida o entorno apantallado y hardware
-disponible.
-
-## Fase 4: BER vs. Eb/N0
-
-La guía exige conservar TX/RX y añadir la instrumentación sobre una copia:
+El canal es:
 
 ```text
-SDR Rx -> adaptación radio_rate/bb_rate -> e_EbN0_Sweep -> Rx digital
-Bits Tx -> e_BER_Curve <- Bits Rx
-                              |
-                         QT GUI Vector Sink
+h[n] = delta[n] + c delta[n-8]
+y[n] = x[n] + c x[n-8] + w[n]
 ```
 
-Instrumentación funcional:
+| Prueba | `eco_real` | `eco_imag` | Tap `c` |
+|---|---:|---:|---:|
+| A · Referencia | 0,00 | 0,00 | `0+0j` |
+| B · Suave | 0,20 | 0,05 | `0,20+0,05j` |
+| C · Media | 0,35 | 0,15 | `0,35+0,15j` |
+| D · Fuerte | 0,50 | 0,20 | `0,50+0,20j` |
 
-- [Flujograma base BER](src/ber/BER_SDR_INSTRUMENTACION_BASE.grc)
-- [e_EbN0_Sweep](src/ber/e_EbN0_Sweep.py)
-- [e_BER_Curve](src/ber/e_BER_Curve.py)
-- [README de instrumentación](src/ber/README_BER_SDR.txt)
+En QPSK, el mapeo cardinal es `00 -> 1`, `01 -> j`, `10 -> -1`,
+`11 -> -j`. El ancho de banda se interpreta con el pulso rectangular usado
+por estos GRC; no se presenta una PSD calibrada cuando la figura es solo la
+respuesta del canal.
 
-Parámetros iniciales exigidos por la guía:
+## GRC funcional
 
-| Parámetro | Valor |
-|---|---:|
-| Eb/N0 mínimo | 0 dB |
-| Eb/N0 máximo | 14 dB |
-| Paso | 1 dB |
-| Bits por punto | 100000 |
-| Bits de guarda | 1000 |
-| Update every | 1000 |
-| Rb / bb_rate | Dependen del sistema real |
-| delay_bits | Ajustar en condición limpia |
+### Archivos modificados
 
-La carpeta todavía no contiene `curva_BER.csv`; por tanto, la medición BER
-experimental y su curva deben ejecutarse con el enlace SDR funcional. No se
-deben fabricar ni editar manualmente esos datos.
+- [QPSK](grc/archivos_modificados/S3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc)
+- [BPSK](grc/archivos_modificados/S3/BPSK/Enlace_S3_BPSK_Multitrayectoria_Grupo3.grc)
+- [TX 16-QAM de imagen](grc/archivos_modificados/SDR_Imagen/LAB_TX_16QAM_HackRF_IMAGEN.grc)
+- [RX 16-QAM de imagen](grc/archivos_modificados/SDR_Imagen/LAB_RX_16QAM_HackRF_IMAGEN.grc)
+
+### Archivos originales o de referencia
+
+Se conservan en [grc/archivos_originales_o_referencia](grc/archivos_originales_o_referencia).
+La versión funcional de QPSK es el archivo modificado anterior; no se conserva
+`prueba.grc`.
+
+Para ejecutar un GRC, abrirlo con GNU Radio Companion 3.10.12, comprobar las
+variables, generar el Python y ejecutar. Los visores QT reciben la salida del
+canal; la constelación no es una constelación recuperada por un receptor.
+
+## Tabla de pruebas y evidencias
+
+| Prueba | Objetivo | Evidencia |
+|---|---|---|
+| A · Referencia | Comportamiento base sin eco | [QPSK](figures/constelacion_o_fsk/QPSK/01_referencia.png), [BPSK](figures/constelacion_o_fsk/BPSK/01_referencia.png) |
+| B · Suave | Inicio de la degradación | [QPSK](figures/constelacion_o_fsk/QPSK/02_eco_suave.png), [BPSK](figures/constelacion_o_fsk/BPSK/02_eco_suave.png) |
+| C · Media | Condición principal de análisis | [QPSK](figures/constelacion_o_fsk/QPSK/03_eco_medio.png), [BPSK](figures/constelacion_o_fsk/BPSK/03_eco_medio.png) |
+| D · Fuerte | Condición de estrés | [QPSK](figures/constelacion_o_fsk/QPSK/04_eco_fuerte.png), [BPSK](figures/constelacion_o_fsk/BPSK/04_eco_fuerte.png) |
+
+Las imágenes con ruido se conservan junto a cada modulación. Las figuras
+analíticas y sus tablas están en [data/tablas_de_pruebas](data/tablas_de_pruebas)
+y [figures/diagramas_tecnicos](figures/diagramas_tecnicos). No se presentan
+como mediciones físicas.
+
+## Estructura del repositorio
+
+```text
+Proyecto_Multitrayectoria/
+├── README.md
+├── grc/
+│   ├── archivos_originales_o_referencia/
+│   └── archivos_modificados/
+├── figures/
+│   ├── escenario/
+│   ├── psd/
+│   ├── constelacion_o_fsk/
+│   └── diagramas_tecnicos/
+├── multimedia/videos/
+├── data/tablas_de_pruebas/
+├── docs/
+│   ├── Informe_Final_Proyecto.pdf
+│   ├── ficha_decision_tecnica.pdf
+│   ├── bitacora.md
+│   └── material_curso/
+├── referencias/fuentes_y_enlaces.md
+└── scripts/, tests/
+```
+
+La carpeta `blog/` conserva el sitio público y sus recursos locales.
 
 ## Reproducibilidad
 
-Desde la raíz de este proyecto:
+Desde esta carpeta:
 
 ```bash
 python scripts/analisis/analizar_s3.py
@@ -138,17 +124,19 @@ python scripts/analisis/animar_s3.py
 python -m unittest discover -s tests -v
 ```
 
-`analizar_s3.py` produce datos y figuras del modelo sin AWGN. `animar_s3.py`
-produce las versiones sin ruido y con ruido sintético reproducible, además de
-la tabla [s3_tabla_resumen.csv](data/figuras_s3/s3_tabla_resumen.csv).
+Las pruebas automáticas verifican mapeo, tasas, taps, conexiones, framing,
+CRC, rotaciones y reconstrucción software de la imagen. Las animaciones son
+visualizaciones analíticas; no reemplazan la captura real de una interfaz GRC.
 
-## Documentación y blog
+## Documentación y multimedia
 
-- [Informe final del proyecto](docs/Informe_Final_Proyecto.pdf)
-- [Guía 4 de validación BER](docs/material_curso/Guia_4_Fase_4_Validacion_final_ajuste_y_comparacion_experimental.pdf)
+- [Informe final IEEE](docs/Informe_Final_Proyecto.pdf)
+- [Ficha de decisión técnica](docs/ficha_decision_tecnica.pdf)
+- [Bitácora](docs/bitacora.md)
+- [Fuentes y enlaces](referencias/fuentes_y_enlaces.md)
 - [Selector interactivo S3](docs/selector_casos_s3.html)
-- [Blog local](blog/index.html)
-- [README general del repositorio](../README.md)
+- [Blog público](https://fabianchacon3.github.io/GNURADIO_LABCOM2UIS_2026_E1_G7/)
 
-El blog distingue explícitamente figuras analíticas, capturas GRC, videos
-suministrados y mediciones experimentales.
+Los videos suministrados están en
+[multimedia/videos](multimedia/videos). La socialización de
+8–10 minutos y su enlace público deben añadirse cuando estén disponibles.

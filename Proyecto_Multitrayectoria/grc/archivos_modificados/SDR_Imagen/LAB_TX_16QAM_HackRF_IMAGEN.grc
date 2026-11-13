@@ -1092,7 +1092,7 @@ blocks:
       class blk(gr.sync_block):
           """Transmite ciclicamente una imagen como tramas de indices 16-QAM (0..15)."""
 
-          def __init__(self, image_path='../../images/imagenes_sdr/Logouis.png',
+          def __init__(self, image_path='../../../figures/escenario/Logouis.png',
                        width=160, height=80, channels=3, payload_len=128,
                        test_mode=False):
               gr.sync_block.__init__(self, name='TX imagen: tramas + CRC32',
@@ -1314,7 +1314,7 @@ blocks:
   id: variable
   parameters:
     comment: Ruta relativa a este GRC; se resuelve al ejecutar el flujo.
-    value: "'../../images/imagenes_sdr/Logouis.png'"
+    value: "'../../../figures/escenario/Logouis.png'"
   states:
     bus_sink: false
     bus_source: false

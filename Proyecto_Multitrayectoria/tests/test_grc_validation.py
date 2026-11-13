@@ -17,13 +17,13 @@ from gnuradio import blocks, channels, digital, filter, gr
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-SRC = PROJECT / "src"
+GRC = PROJECT / "grc"
 S3_FILES = {
-    "QPSK": SRC / "s3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc",
-    "BPSK": SRC / "s3/BPSK/Enlace_S3_BPSK_Multitrayectoria_Grupo3.grc",
+    "QPSK": GRC / "archivos_modificados/S3/QPSK/Enlace_S3_QPSK_Multitrayectoria_Grupo3.grc",
+    "BPSK": GRC / "archivos_modificados/S3/BPSK/Enlace_S3_BPSK_Multitrayectoria_Grupo3.grc",
 }
-TX_FILE = SRC / "sdr_imagen/LAB_TX_16QAM_HackRF_IMAGEN.grc"
-RX_FILE = SRC / "sdr_imagen/LAB_RX_16QAM_HackRF_IMAGEN.grc"
+TX_FILE = GRC / "archivos_modificados/SDR_Imagen/LAB_TX_16QAM_HackRF_IMAGEN.grc"
+RX_FILE = GRC / "archivos_modificados/SDR_Imagen/LAB_RX_16QAM_HackRF_IMAGEN.grc"
 ECHO_CASES = ((0.0, 0.0), (0.20, 0.05), (0.35, 0.15), (0.50, 0.20))
 
 
@@ -245,7 +245,7 @@ class ImageProtocolValidation(unittest.TestCase):
         self.assertEqual(generated.size, (7, 5))
 
         relative = tx_module["resolve_image_path"](
-            "../../images/imagenes_sdr/Logouis.png")
+            "../../../figures/escenario/Logouis.png")
         self.assertTrue(Path(relative).is_file())
 
     def test_optional_logs_are_anchored_to_the_generated_flowgraph(self):
