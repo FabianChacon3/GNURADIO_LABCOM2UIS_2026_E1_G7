@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+
+Proyecto_Multitrayectoria/src/sdr_imagen/data/resultados/*
+!Proyecto_Multitrayectoria/src/sdr_imagen/data/resultados/.gitkeep
