@@ -1,0 +1,5 @@
+condicion,eco_real,eco_imag,magnitud_eco,fase_grados,potencia_media_relativa,retardo_muestras,retardo_us,ruido_declarado,interpretacion
+Referencia,0.0,0.0,0.0,,1.0,8,31.25,0.05,Sin eco; salida ideal
+Suave,0.2,0.05,0.20615528128088306,14.036243467926479,1.0425,8,31.25,0.05,ISI leve; desplazamiento pequeño
+Media,0.35,0.15,0.3807886552931954,23.19859051364819,1.145,8,31.25,0.05,ISI moderada; mayor dispersion
+Fuerte,0.5,0.2,0.5385164807134505,21.80140948635181,1.29,8,31.25,0.05,ISI fuerte; desplazamiento dominante
